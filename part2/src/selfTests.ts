@@ -1,7 +1,5 @@
 
 
-
-
 type Resolver<T,R> = (value: T) => R;
 
 // wait ms milliseconds
@@ -38,9 +36,7 @@ world();
 
 
 /*
-
 let n:Number = 1;
-
 const simpleP = new Promise<string>((resolve, reject) => {
     setTimeout(() => {
         if (n === 0)
@@ -49,9 +45,7 @@ const simpleP = new Promise<string>((resolve, reject) => {
             reject("just cause I want.");
     }, 5000)
     })
-
 simpleP.then((res) => console.log(res)).catch((err) => console.log(err));
-
 console.log("n's value: ", n);
 n = 0;
 console.log("n's value changes to: ", n);
