@@ -44,20 +44,30 @@ export function makePromisedStore<K, V>(): PromisedStore<K, V> {
     let retarr: V[] = [];
     return new Promise<V[]>((resolve, reject) => {
         keys.forEach((key: K) => store.get(key).then((val: V) => 
-            retarr = retarr.concat(val)).catch((err) => reject(MISSING_KEY)))
+            retarr.push(val)).catch((err) => reject(MISSING_KEY)))
         resolve(retarr);
     })
-    // This contains a mutation on retarr!! If this works, find a way to do it without mutation.
+    // This contains a mutation on retarr! Is this o.k?
  }
 
 /* 2.2 */
 
 //  ??? (you may want to add helper functions here)
 
-// export function asycMemo<T, R>(f: (param: T) => R): (param: T) => Promise<R> {
-//     ???
-// }
-//
+// My addition: a global store that the function can work with. Otherwise how will it know what has been called untill now?
+const store: PromisedStore<T, R> = makePromisedStore<T, R>();
+
+ export function asycMemo<T, R>(f: (param: T) => R): (param: T) => Promise<R> {
+     // We want to save the parameter of f as a key, and it's value as it's Val.
+     // The goal is that in every call of f with a parameter that f has been called with before, the result of 
+     // the computation is already saved as the value attached to the parameter (key) in the Promised-Store.
+     // Every time that f is called with a new parameter, we perform the calculation of f on it, and save
+     // the couple <parameter, value> in our store (which holds a map that holds these references).
+     try{
+         
+     } 
+ }
+
 ///* 2.3 */
 //
 // export function lazyFilter<T>(genFn: () => Generator<T>, filterFn: ???): ??? {
