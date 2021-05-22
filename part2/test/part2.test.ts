@@ -2,7 +2,8 @@
 
 import chai, { expect } from 'chai';
 
-import { asycMemo, asyncWaterfallWithRetry, getAll, lazyFilter, lazyMap, makePromisedStore, MISSING_KEY } from '../src/part2';
+// import { asycMemo, asyncWaterfallWithRetry, getAll, lazyFilter, lazyMap, makePromisedStore, MISSING_KEY } from '../src/part2';
+import {getAll, makePromisedStore, MISSING_KEY } from '../src/part2';
 
 import chaiAsPromised from 'chai-as-promised'
 
@@ -29,7 +30,7 @@ describe('2.1 (PromisedStore)', () => {
         expect(await getAll(store,['b', 'a'])).to.deep.equal([24, 42])
     })
 })
-
+/*
 describe('2.2 (asycMemo)', () => {
     it('memoizes calls', async () => {
         let ret = 'cached'
@@ -78,3 +79,4 @@ describe('2.4 (asyncWaterfallWithRetry)', () => {
         expect(v).to.equal(4)
     }).timeout(5000)
 })
+*/
