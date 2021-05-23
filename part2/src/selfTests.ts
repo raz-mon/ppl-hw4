@@ -1,75 +1,102 @@
 
+function* myGenerator() {
+    yield "Yo!";
+  }
+  
+  var iterator = myGenerator();
+  var result = iterator.next();
+  console.log(result); // { value: "Yo!", done: false }
+  
 
-/* 2.1 */
-
-export const MISSING_KEY = '___MISSING___'
-
-type PromisedStore<K, V> = {
-    get(key: K): Promise<V>,
-    set(key: K, value: V): Promise<void>,
-    delete(key: K): Promise<void>
+function* testing () {
+    let ind = 0;
+    while (ind < 3)
+        yield(ind++);
 }
 
-export function makePromisedStore<K, V>(): PromisedStore<K, V> {
-    const m = new Map<K, V>();
-    return {
-        get(key: K) {
-            return new Promise<V>((resolve, reject) => {
-                const v:V | undefined = m.get(key);
-                if (v != undefined)
-                    resolve(v);
-                else
-                    reject(MISSING_KEY);
-            })
-        },
-        set(key: K, value: V) {
-            return new Promise<void>((resolve, reject) => {
-                if (m.set(key, value).has(key))
-                    resolve();
-                else
-                    reject();
-            })
-        },
-        delete(key: K) {
-            return new Promise<void>((resolve, reject) => {
-            const b: boolean = m.delete(key);
-            if (b)
-                resolve();
-            else
-                reject(MISSING_KEY);
-            })
-        },
+const gen = testing();
+
+let curr = gen.next();
+
+while (!curr.done){
+    console.log(curr.value);
+    curr = gen.next();
+}
+
+for (let v of gen)
+    console.log(v)
+/*
+function* naturalNumbers() {
+    for (let n=0;; n++) {
+        yield n;
     }
 }
 
- export function getAll<K, V>(store: PromisedStore<K, V>, keys: K[]): Promise<V[]> {
-    let retarr: V[] = [];
-    return new Promise<V[]>((resolve, reject) => {
-        keys.forEach((key: K) => store.get(key).then((val: V) => 
-            retarr.push(val)).catch((err) => reject(MISSING_KEY)))
-        resolve(retarr);
-    })
-    // This contains a mutation on retarr! Is this o.k?
- }
+function* take(n: any, generator: Generator<Number>) {
+    for (let x of generator) {
+        if (n <= 0) return;
+        n--;
+        yield x;
+    }
+}
+
+for (let n of take(3, naturalNumbers())) {
+    console.log(n);
+}
+*/
 
 
- const store: PromisedStore<Number, string> = makePromisedStore();
- store.set(0, "raz");
- store.set(1, "almog");
- console.log(store.get(0));
- console.log(store.get(1));
- console.log(getAll(store, [0, 1]));
 
- async function f () {
-     console.log(await getAll(store, [0, 1]));
- }
 
- const y = async (): Promise<void> => {
-    console.log(await getAll(store, [0, 1]));
- }
 
-f();
-y();
+
+/*
+function* testing () {
+    let ind = 0;
+    while (ind < 3)
+        yield(ind++);
+}
+
+const gen = testing();
+
+for (let v of testing()){
+    console.log(v);
+}
+
+function* foo() {
+    yield 1;
+    yield 2;
+    yield 3;
+    yield 4;
+    yield 5;
+    return 6;
+}
+
+for ( let v of foo() ) {
+    console.log(v);
+}
+
+function* range(start: Number, end: Number) {
+    for (let n:Number=start; n < end; n++) {
+        yield n;
+    }
+}
+
+for (let n of range(1,5)) 
+    console.log(n);
+*/
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

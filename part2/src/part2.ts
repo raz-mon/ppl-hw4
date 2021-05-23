@@ -1,5 +1,7 @@
 /* 2.1 */
 
+import { isGeneratorFunction } from "util/types";
+
 export const MISSING_KEY = '___MISSING___'
 
 type PromisedStore<K, V> = {
@@ -55,13 +57,6 @@ export function makePromisedStore<K, V>(): PromisedStore<K, V> {
 //  ??? (you may want to add helper functions here)
 
 export function asycMemo<T, R>(f: (param: T) => R): (param: T) => Promise<R> {
-    // We want to save the parameter of f as a key, and it's value as it's Val.
-    // The goal is that in every call of f with a parameter that f has been called with before, the result of 
-    // the computation is already saved as the value attached to the parameter (key) in the Promised-Store.
-    // Every time that f is called with a new parameter, we perform the calculation of f on it, and save
-    // the couple <parameter, value> in our store (which holds a map that holds these references).
-    
-    // I think that this has to look the same as the upper interface.
     const store: PromisedStore<T, R> = makePromisedStore();
     
     const retfun = async (param: T): Promise<R> => {
@@ -78,23 +73,38 @@ export function asycMemo<T, R>(f: (param: T) => R): (param: T) => Promise<R> {
     return retfun;
 }
 
-///* 2.3 */
-//
-// export function lazyFilter<T>(genFn: () => Generator<T>, filterFn: ???): ??? {
-//     ???
-// }
-//
-// export function lazyMap<T, R>(genFn: () => Generator<T>, mapFn: ???): ??? {
-//     ???
-// }
-//
-///* 2.4 */
-//// you can use 'any' in this question
-//
-// export async function asyncWaterfallWithRetry(fns: [() => Promise<any>, ...(???)[]]): Promise<any> {
-//     ???
-// }
-//
+/* 2.3 */
+export function lazyFilter<T>(genFn: () => Generator<T>, filterFn: ???): Generator<T> {
+    // Don't quite understand the meaning of "don't convert the generator to an array".
+    // Is this because it supposidly holds some numbers that I can treat as an array?
+    // If so, all I need to do is compute the computation one-by-one. The returned generator takes a T from the given generator, 
+    // performs the filter on it, and then returns it or not apropriatly. Isn't that exactly what we did in class??
+    
+    // If it is indeed identical to what we saw in class, then this should do the job:
+    return function* newGen (): Generator<T> {
+        for (let x of genFn()) {
+            if (filterFn(x)) {
+                yield x;
+            }
+        } 
+    }
+}
+export function lazyMap<T, R>(genFn: () => Generator<T>, mapFn: ???): Generator<T> {
+    // If the written above is correct, it is relevant to this section too.
+    return function* newGen (): Generator<T> {
+        for (let x of genFn()) {
+            yield mapFn(x);
+        }
+    }
+}
+
+/* 2.4 */
+// you can use 'any' in this question
+
+ export async function asyncWaterfallWithRetry(fns: [() => Promise<any>, ...(???)[]]): Promise<any> {
+     ???
+ }
+
 
 
 
