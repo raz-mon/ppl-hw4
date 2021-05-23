@@ -54,19 +54,29 @@ export function makePromisedStore<K, V>(): PromisedStore<K, V> {
 
 //  ??? (you may want to add helper functions here)
 
-// My addition: a global store that the function can work with. Otherwise how will it know what has been called untill now?
-const store: PromisedStore<T, R> = makePromisedStore<T, R>();
-
- export function asycMemo<T, R>(f: (param: T) => R): (param: T) => Promise<R> {
-     // We want to save the parameter of f as a key, and it's value as it's Val.
-     // The goal is that in every call of f with a parameter that f has been called with before, the result of 
-     // the computation is already saved as the value attached to the parameter (key) in the Promised-Store.
-     // Every time that f is called with a new parameter, we perform the calculation of f on it, and save
-     // the couple <parameter, value> in our store (which holds a map that holds these references).
-     try{
-         
-     } 
- }
+export function asycMemo<T, R>(f: (param: T) => R): (param: T) => Promise<R> {
+    // We want to save the parameter of f as a key, and it's value as it's Val.
+    // The goal is that in every call of f with a parameter that f has been called with before, the result of 
+    // the computation is already saved as the value attached to the parameter (key) in the Promised-Store.
+    // Every time that f is called with a new parameter, we perform the calculation of f on it, and save
+    // the couple <parameter, value> in our store (which holds a map that holds these references).
+    
+    // I think that this has to look the same as the upper interface.
+    const store: PromisedStore<T, R> = makePromisedStore();
+    
+    const retfun = async (param: T): Promise<R> => {
+        
+        try{
+            const val = await store.get(param);     // check if the function has already been called with this parameter.
+            return store.get(param);
+        }
+        catch{          // key 'param' is not in the store - the function was not called with it yet.
+            store.set(param, f(param));
+            return store.get(param);            
+        }
+    }
+    return retfun;
+}
 
 ///* 2.3 */
 //
