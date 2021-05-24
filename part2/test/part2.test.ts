@@ -60,9 +60,17 @@ describe('2.3 (lazy generators)', () => {
         const gen = lazyFilter(countTo4, (v) => v % 2 == 0)();
         expect([...gen]).to.deep.equal([2, 4])
     })
+    it('filters - almog test', async () => {
+        const gen = lazyFilter(countTo4, (v) => v > 3)();
+        expect([...gen]).to.deep.equal([4])
+    })
     it('maps', async () => {
         const gen = lazyMap(countTo4, (v) => v ** 2)();
         expect([...gen]).to.deep.equal([1, 4, 9, 16])
+    })
+    it('maps - almog test', async () => {
+        const gen = lazyMap(countTo4, (v) => v - 1)();
+        expect([...gen]).to.deep.equal([0, 1, 2, 3])
     })
 })
 
