@@ -238,9 +238,12 @@ export const typeofLetrec = (exp: A.LetrecExp, tenv: E.TEnv): Result<T.TExp> => 
 // Purpose: compute the type of a define
 // Typing rule:
 //   (define (var : texp) val)
-// TODO - write the typing rule for define-exp
+// If   type<var>(tenv) = t
+//      type<val>(tenv) = t
+// then type<>(tenv) = void
 export const typeofDefine = (exp: A.DefineExp, tenv: E.TEnv): Result<T.VoidTExp> => {
-    return makeFailure('TODO typeofDefine');
+    const constraint = bind(typeofExp(exp.val, tenv), (TEval: T.TExp) => checkEqualType(exp.var.texp, TEval, exp.val));
+    return bind(constraint, _ => makeOk(T.makeVoidTExp()));
 };
 
 // Purpose: compute the type of a program
@@ -252,15 +255,18 @@ export const typeofProgram = (exp: A.Program, tenv: E.TEnv): Result<T.TExp> =>
     typeofProgramExps(first(exp.exps), rest(exp.exps), tenv);
 
 const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> => 
-    makeFailure('TODO typeofProgramExps');
-
+    isEmpty(exps) ? typeofExp(exp, tenv) :
+    A.isDefineExp(exp) ? bind(typeofDefine(exp, tenv),
+    _ => typeofProgramExps(first(exps), rest(exps), E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv))) :
+    bind(typeofExp(exp, tenv), _ => typeofProgramExps(first(exps), rest(exps), tenv));
 
 // Purpose: compute the type of a literal expression
 //      - Only need to cover the case of Symbol and Pair
 //      - for a symbol - record the value of the symbol in the SymbolTExp
 //        so that precise type checking can be made on ground symbol values.
 export const typeofLit = (exp: A.LitExp): Result<T.TExp> =>
-    makeFailure(`TODO typeofLit`);
+    V.isSymbolSExp(exp.val) ? makeOk(T.makeSymbolTExp(exp.val)) :
+    makeOk(T.makePairTExp());
 
 // Purpose: compute the type of a set! expression
 // Typing rule:
