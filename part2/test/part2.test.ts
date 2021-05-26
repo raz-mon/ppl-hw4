@@ -2,8 +2,8 @@
 
 import chai, { expect } from 'chai';
 
-// import { asycMemo, asyncWaterfallWithRetry, getAll, lazyFilter, lazyMap, makePromisedStore, MISSING_KEY } from '../src/part2';
-import {asycMemo, getAll, makePromisedStore, MISSING_KEY } from '../src/part2';
+ import { asycMemo, asyncWaterfallWithRetry, getAll, lazyFilter, lazyMap, makePromisedStore, MISSING_KEY } from '../src/part2';
+//import {asycMemo, getAll, makePromisedStore, MISSING_KEY, lazyFilter, lazyMap } from '../src/part2';
 
 import chaiAsPromised from 'chai-as-promised'
 
@@ -49,7 +49,7 @@ describe('2.2 (asycMemo)', () => {
         expect(await memo('b')).to.equal('new')
     })
 })
-/*
+
 describe('2.3 (lazy generators)', () => {
     function * countTo4(): Generator<number> {
         for (let i = 1; i <= 4; i++) {
@@ -87,4 +87,3 @@ describe('2.4 (asyncWaterfallWithRetry)', () => {
         expect(v).to.equal(4)
     }).timeout(5000)
 })
-*/

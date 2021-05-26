@@ -1,13 +1,135 @@
 
-function* myGenerator() {
-    yield "Yo!";
-  }
-  
-  var iterator = myGenerator();
-  var result = iterator.next();
-  console.log(result); // { value: "Yo!", done: false }
-  
 
+export async function asyncWaterfallWithRetry(fns: [() => Promise<any>, ...((a: any) => Promise<any>)[]]): Promise<any> {
+    // We get a list of async functions, and apply them one after the other, where the first function gets no
+    // parameter, and the rest get as their parameter the return value of the prior function.
+    // If a function failes (i.e rejects, we are dealing with promises), then we retry. We retry at most twice.
+    // async function - a function that returns a Promise<T>. Can use await inside it's body.
+
+   // Not sure about the syntax of the declaration of the array components types! See if that actually works. 
+   // The meaning was that we want every other array component to be of the type: (any) => Promise<any>.
+
+   const len: Number = fns.length;
+
+   let last_val = await (fns[0])();
+
+   for (let i = 1; i < len; i++){
+       try{
+           //.log(last_val);
+           last_val = await fns[i](last_val);
+           //console.log(last_val);
+       }
+       catch{
+           console.log("first error occured");
+           
+                            const prom:Promise<any> = new Promise((resolve, reject) => {
+                                    try{
+                                        last_val = fns[i](last_val);
+                                    }
+                                    catch{
+                                        console.log("second error occured");
+                                        reject();
+                                    }
+                                resolve(last_val);
+
+                            });
+
+           setTimeout(() => {
+               while(i < len){
+                    
+               }
+           }, 2000);
+
+        }
+        //return last_val;
+    }
+
+   return last_val;
+}
+
+
+async function t1 () {
+    const v = await asyncWaterfallWithRetry([async () => 1, async v => v + 1, async v => v * 2 ])
+    console.log("returned value:", v);
+} 
+t1();
+
+
+
+
+
+
+
+
+
+
+/*
+function* myGenerator() {
+    for(let i = 0; i < 5; i++)
+        yield i;
+    return;
+  }
+  let gen = myGenerator();
+  let it2 = gen.next();
+while (!it2.done){
+    console.log(it2.value);
+    it2 = gen.next();
+  }
+*/
+
+
+
+
+
+/*
+// An infinite generator
+function* naturalNumbers() {
+    for (let n=0;; n++) {
+        yield n;
+    }
+}
+
+function* take<T>(n: number, generator: Generator<T>): Generator<T> {
+    for (let x of generator) {
+        if (n <= 0) return;
+        n--;
+        yield x;
+    }
+}
+
+// A filter operator adapted to generators
+function* filterGen<T>(generator: Generator<T>, filterFunc: (x: T) =>
+boolean): Generator<T> {
+    for (let x of generator) {
+        if (filterFunc(x)) {
+            yield x;
+        }
+    }
+}
+
+for (let n of take(4, filterGen(naturalNumbers(), (x: number) => (x %
+2) === 0))) {
+    console.log(n);
+}
+
+const gen: Generator = take(4, filterGen(naturalNumbers(), (x: number) => (x %
+    2) === 0))
+const it2 = gen.next();
+while(!it2.done)
+    console.log(it2.value);
+*/
+
+
+
+
+
+
+  /*
+  var iterator = myGenerator();
+  var result = iterator.next().value;
+  console.log(result); // { value: "Yo!", done: false }
+*/
+/*
 function* testing () {
     let ind = 0;
     while (ind < 3)
@@ -16,15 +138,19 @@ function* testing () {
 
 const gen = testing();
 
+for (let v of gen)
+    console.log(v)
+*/
+/*
 let curr = gen.next();
-
 while (!curr.done){
     console.log(curr.value);
     curr = gen.next();
 }
+*/
 
-for (let v of gen)
-    console.log(v)
+
+
 /*
 function* naturalNumbers() {
     for (let n=0;; n++) {
