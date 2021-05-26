@@ -12,47 +12,117 @@ export async function asyncWaterfallWithRetry(fns: [() => Promise<any>, ...((a: 
    const len: Number = fns.length;
 
    let last_val = await (fns[0])();
+   console.log("first val: ", last_val);
 
    for (let i = 1; i < len; i++){
-       try{
-           //.log(last_val);
-           last_val = await fns[i](last_val);
-           //console.log(last_val);
-       }
-       catch{
-           console.log("first error occured");
-           
-                            const prom:Promise<any> = new Promise((resolve, reject) => {
-                                    try{
-                                        last_val = fns[i](last_val);
-                                    }
-                                    catch{
-                                        console.log("second error occured");
-                                        reject();
-                                    }
-                                resolve(last_val);
-
-                            });
-
-           setTimeout(() => {
-               while(i < len){
-                    
-               }
-           }, 2000);
-
+        let last_val1 = await tryFirst(last_val, fns[i]);
+        if (last_val1 === -1000){
+            let last_val2 = await tryAgain(last_val, fns[i])
+            if (last_val2 === -1000){
+                last_val = await tryThird(last_val, fns[i]);
+            }
+            else{
+                last_val = last_val2;
+            }
         }
-        //return last_val;
-    }
+        else{
+            last_val = last_val1;
+        }
 
-   return last_val;
+
+
+/*
+    try{
+        last_val = await fns[i](last_val);
+        console.log("val after ", i, "computations: ", last_val);
+    }
+     catch{
+         console.log("first error occured");
+         setTimeout(() => {
+                 try{
+                     last_val = tryAgain(last_val, fns[i]);
+                 }
+                 catch{
+                     setTimeout(() => {
+                         last_val = tryThird(last_val, fns[i]);
+                     }, 2000);
+                 }
+             }, 2000);
+            // console.log(last_val);
+     }
+     */
+    // console.log(last_val);
+ }
+    async function tryFirst (last_val: any, func: any) {
+        try{
+            const x = await func(last_val);
+            return x;
+        }
+        catch{
+            console.log("First error occured");
+            return -1000;
+            //throw Error();
+        }
+    }   
+
+   async function tryAgain (last_val: any, func: any) {
+        try{
+            const x = await func(last_val);
+            return x;
+        }
+        catch{
+            console.log("second error occured");
+            return -1000;
+            //throw Error();
+        }
+    }   
+
+    async function tryThird (last_val: any, func: any) {
+        try{
+            const x = await func(last_val);
+            return x;
+        }
+        catch{
+            console.log("third error occured");
+            throw Error();
+        }
+    }    
+
+    return last_val;
 }
 
-
 async function t1 () {
-    const v = await asyncWaterfallWithRetry([async () => 1, async v => v + 1, async v => v * 2 ])
-    console.log("returned value:", v);
+    //const v = await asyncWaterfallWithRetry([async () => 1, async v => v + 1, async v => v * 2 ])
+    let attempt = 1;
+    const v = await asyncWaterfallWithRetry([async () => 1, async v => {
+        if (attempt == 3)
+            return v + 1
+        attempt += 1
+        throw Error()
+    }, async v => v * 2 ]);
+    console.log(v);
 } 
 t1();
+
+
+
+
+           
+//                            const prom:Promise<any> = new Promise((resolve, reject) => {
+//                                    try{
+//                                        last_val = fns[i](last_val);
+//                                    }
+//                                    catch{
+//                                        console.log("second error occured");
+//                                        reject();
+//                                    }
+//                                resolve(last_val);
+//
+//                            });
+
+
+
+
 
 
 
