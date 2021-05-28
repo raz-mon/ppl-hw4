@@ -101,6 +101,7 @@ const checkNoOccurrence = (tvar: T.TVar, te: T.TExp, exp: A.Exp): Result<true> =
 // Initialize the TEnv with all defined classes 
 // so that the user defined types are known to the type inference system.
 // For each class (class : typename ...) add a pair <class.typename classTExp> to TEnv
+// (raz): This should be done by a traversal over the AST, while for every classExp we do the above.
 export const makeTEnvFromClasses = (parsed: A.Parsed): E.TEnv => {
     // TODO makeTEnvFromClasses
     return E.makeEmptyTEnv();
@@ -110,7 +111,7 @@ export const makeTEnvFromClasses = (parsed: A.Parsed): E.TEnv => {
 export const inferTypeOf = (concreteExp: string): Result<string> =>
     bind(A.parse(concreteExp), 
          parsed => {
-            const tenv =  makeTEnvFromClasses(parsed);  // L51
+            const tenv = makeTEnvFromClasses(parsed);  // L51
             // console.log(`tenv = ${tenv}`);
             return bind(typeofExp(parsed, tenv),
                         T.unparseTExp);
@@ -240,6 +241,7 @@ export const typeofLetrec = (exp: A.LetrecExp, tenv: E.TEnv): Result<T.TExp> => 
 //   (define (var : texp) val)
 // TODO - write the typing rule for define-exp
 export const typeofDefine = (exp: A.DefineExp, tenv: E.TEnv): Result<T.VoidTExp> => {
+    
     return makeFailure('TODO typeofDefine');
 };
 
@@ -265,9 +267,14 @@ export const typeofLit = (exp: A.LitExp): Result<T.TExp> =>
 // Purpose: compute the type of a set! expression
 // Typing rule:
 //   (set! var val)
-// TODO - write the typing rule for set-exp
+// If   type<var>(tenv) = t1
+//      type<val>(tenv) = t1
+// then type<set>(tenv) = void
 export const typeofSet = (exp: A.SetExp, tenv: E.TEnv): Result<T.VoidTExp> => {
-    return makeFailure('TODO typeofSet');
+    const varTE = typeofExp(exp.var, tenv);
+    const valTE = typeofExp(exp.val, tenv);
+    const constrain = safe2((varTE: T.TExp, valTE: T.TExp) => checkEqualType(varTE, valTE, exp))(varTE, valTE);
+    return bind(constrain, _ => makeOk(T.makeVoidTExp()));
 };
 
 // Purpose: compute the type of a class-exp(type fields methods)
