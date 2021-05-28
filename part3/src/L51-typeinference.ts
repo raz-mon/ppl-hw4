@@ -240,9 +240,9 @@ export const typeofLetrec = (exp: A.LetrecExp, tenv: E.TEnv): Result<T.TExp> => 
 //   (define (var : texp) val)
 // If   type<var>(tenv) = t
 //      type<val>(tenv) = t
-// then type<>(tenv) = void
+// then type<(define (var : texp) val)>(tenv) = void
 export const typeofDefine = (exp: A.DefineExp, tenv: E.TEnv): Result<T.VoidTExp> => {
-    const constraint = bind(typeofExp(exp.val, tenv), (TEval: T.TExp) => checkEqualType(exp.var.texp, TEval, exp.val));
+    const constraint = bind(typeofExp(exp.val, tenv), (TEval: T.TExp) => checkEqualType(exp.var.texp, TEval, exp));
     return bind(constraint, _ => makeOk(T.makeVoidTExp()));
 };
 
@@ -273,7 +273,13 @@ export const typeofLit = (exp: A.LitExp): Result<T.TExp> =>
 //   (set! var val)
 // TODO - write the typing rule for set-exp
 export const typeofSet = (exp: A.SetExp, tenv: E.TEnv): Result<T.VoidTExp> => {
-    return makeFailure('TODO typeofSet');
+    const tenvTE = E.applyTEnv(tenv,exp.var.var);
+    const varTE = typeofExp(exp.var, tenv);
+    const valTE = typeofExp(exp.val, tenv);
+    const constraint1 = safe2((tenvTE: T.TExp, varTE: T.TExp) => checkEqualType(tenvTE, varTE, exp))(tenvTE, varTE);
+    const constraint2 = safe2((varTE: T.TExp, valTE: T.TExp) => checkEqualType(varTE, valTE, exp))(varTE, valTE);
+    const totalConst = safe2((bool1: boolean, bool2: boolean) => makeOk(true))(constraint1,constraint2);
+    return bind(totalConst, _ => makeOk(T.makeVoidTExp()));
 };
 
 // Purpose: compute the type of a class-exp(type fields methods)
