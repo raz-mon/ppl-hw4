@@ -242,7 +242,7 @@ export const typeofLetrec = (exp: A.LetrecExp, tenv: E.TEnv): Result<T.TExp> => 
 //      type<val>(tenv) = t
 // then type<(define (var : texp) val)>(tenv) = void
 export const typeofDefine = (exp: A.DefineExp, tenv: E.TEnv): Result<T.VoidTExp> => {
-    const constraint = bind(typeofExp(exp.val, tenv), (TEval: T.TExp) => checkEqualType(exp.var.texp, TEval, exp));
+    const constraint = bind(typeofExp(exp.val, tenv), (valTE: T.TExp) => checkEqualType(exp.var.texp, valTE, exp));
     return bind(constraint, _ => makeOk(T.makeVoidTExp()));
 };
 
@@ -271,7 +271,9 @@ export const typeofLit = (exp: A.LitExp): Result<T.TExp> =>
 // Purpose: compute the type of a set! expression
 // Typing rule:
 //   (set! var val)
-// TODO - write the typing rule for set-exp
+// If   type<var>(tenv) = t1
+//      type<val>(tenv) = t1
+// then type<set! var val> = void
 export const typeofSet = (exp: A.SetExp, tenv: E.TEnv): Result<T.VoidTExp> => {
     const tenvTE = E.applyTEnv(tenv,exp.var.var);
     const varTE = typeofExp(exp.var, tenv);
