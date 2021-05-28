@@ -210,7 +210,22 @@ export const typeofDefine = (exp: DefineExp, tenv: TEnv): Result<VoidTExp> => {
 
 // Purpose: compute the type of a program
 // Typing rule:
+
 // Not implemented: Thread the TEnv (as in L1)        Delete this comment before submitting!!!$@$@!#$!#$
-// Add something here? The type expression of the program will obviously be the type of the last expression in it.
+
+// Add something here??? The type expression of the program will obviously be the type of the last expression in it.
 export const typeofProgram = (exp: Program, tenv: TEnv): Result<TExp> =>
+    isEmpty(exp.exps) ? makeFailure("Empty program") :
+    typeofProgramExps(first(exp.exps), rest(exp.exps), tenv);
+
+const typeofProgramExps = (exp: Exp, exps: Exp[], tenv: TEnv): Result<TExp> => 
+    isEmpty(exps) ? typeofExp(exp, tenv) :
+    isDefineExp(exp) ? bind(typeofDefine(exp, makeExtendTEnv([exp.var.var], [exp.var.texp], tenv)),
+    _ => typeofProgramExps(first(exps), rest(exps), makeExtendTEnv([exp.var.var], [exp.var.texp], tenv))) :
+    bind(typeofExp(exp, tenv), _ => typeofProgramExps(first(exps), rest(exps), tenv));
+
+
+    /*
+    // L1 like implementation:
     typeofExps(exp.exps, tenv);
+    */
