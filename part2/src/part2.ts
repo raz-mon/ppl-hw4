@@ -47,102 +47,96 @@ export function makePromisedStore<K, V>(): PromisedStore<K, V> {
             retarr.push(val)).catch((err) => reject(MISSING_KEY)))
         resolve(retarr);
     })
-    // This contains a mutation on retarr! Is this o.k?
  }
 
 /* 2.2 */
 
-//  ??? (you may want to add helper functions here)
-
-// My addition: a global store that the function can work with. Otherwise how will it know what has been called untill now?
-const store: PromisedStore<T, R> = makePromisedStore<T, R>();
-
- export function asycMemo<T, R>(f: (param: T) => R): (param: T) => Promise<R> {
-     // We want to save the parameter of f as a key, and it's value as it's Val.
-     // The goal is that in every call of f with a parameter that f has been called with before, the result of 
-     // the computation is already saved as the value attached to the parameter (key) in the Promised-Store.
-     // Every time that f is called with a new parameter, we perform the calculation of f on it, and save
-     // the couple <parameter, value> in our store (which holds a map that holds these references).
-     try{
-         
-     } 
- }
-
-///* 2.3 */
-//
-// export function lazyFilter<T>(genFn: () => Generator<T>, filterFn: ???): ??? {
-//     ???
-// }
-//
-// export function lazyMap<T, R>(genFn: () => Generator<T>, mapFn: ???): ??? {
-//     ???
-// }
-//
-///* 2.4 */
-//// you can use 'any' in this question
-//
-// export async function asyncWaterfallWithRetry(fns: [() => Promise<any>, ...(???)[]]): Promise<any> {
-//     ???
-// }
-//
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// export function makePromisedStore<K, V>(): PromisedStore<K, V> {
-//     ???
-//     return {
-//         get(key: K) {
-//             ???
-//         },
-//         set(key: K, value: V) {
-//             ???
-//         },
-//         delete(key: K) {
-//             ???
-//         },
-//     }
-// }
-
-// export function getAll<K, V>(store: PromisedStore<K, V>, keys: K[]): ??? {
-//     ???
-// }
-
-/* 2.2 */
-
-// ??? (you may want to add helper functions here)
-//
-// export function asycMemo<T, R>(f: (param: T) => R): (param: T) => Promise<R> {
-//     ???
-// }
+export function asycMemo<T, R>(f: (param: T) => R): (param: T) => Promise<R> {
+    const store: PromisedStore<T, R> = makePromisedStore();
+    const retfun = async (param: T): Promise<R> => {
+        try{
+            const val = await store.get(param);     // check if the function has already been called with this parameter.
+            return val;
+        }
+        catch{          // key 'param' is not in the store - the function was not called with it yet.
+            store.set(param, f(param));
+            return store.get(param);            
+        }
+    }
+    return retfun;
+}
 
 /* 2.3 */
 
-// export function lazyFilter<T>(genFn: () => Generator<T>, filterFn: ???): ??? {
-//     ???
-// }
+export function lazyFilter<T>(genFn: () => Generator<T>, filterFn: (t: T) => boolean):() => Generator<T> {
+    return function* newGen (): Generator<T> {
+        let gen:Generator<T> = genFn();
+        for (let x of gen) {
+            if (filterFn(x)) {
+                yield x;
+            }
+        } 
+    };
+ }
 
-// export function lazyMap<T, R>(genFn: () => Generator<T>, mapFn: ???): ??? {
-//     ???
-// }
+
+ export function lazyMap<T, R>(genFn: () => Generator<T>, mapFn: (t: T) => R):() => Generator<R> {
+     return function* newGen(): Generator<R>{
+         let gen:Generator<T> = genFn();
+         for (let x of gen){
+             yield(mapFn(x));
+         }
+     };
+ }
 
 /* 2.4 */
-// you can use 'any' in this question
 
-// export async function asyncWaterfallWithRetry(fns: [() => Promise<any>, ...(???)[]]): Promise<any> {
-//     ???
-// }
+export async function asyncWaterfallWithRetry(fns: [() => Promise<any>, ...((a: any) => Promise<any>)[]]): Promise<any> {
+   const len: Number = fns.length;
+   let last_val = await (fns[0])();
+   for (let i = 1; i < len; i++){
+        let last_val1 = await tryFirst(last_val, fns[i]);
+        if (last_val1 === -1000){
+            let last_val2 = await tryAgain(last_val, fns[i])
+            if (last_val2 === -1000){
+                last_val = await tryThird(last_val, fns[i]);
+            }
+            else{
+                last_val = last_val2;
+            }
+        }
+        else{
+            last_val = last_val1;
+        }
+ }
+    async function tryFirst (last_val: any, func: any) {
+        try{
+            const x = await func(last_val);
+            return x;
+        }
+        catch{
+            return -1000;
+        }
+    }   
+
+   async function tryAgain (last_val: any, func: any) {
+        try{
+            const x = await func(last_val);
+            return x;
+        }
+        catch{
+            return -1000;
+        }
+    }   
+
+    async function tryThird (last_val: any, func: any) {
+        try{
+            const x = await func(last_val);
+            return x;
+        }
+        catch{
+            throw Error();      // No more tolarence for errors (no more nice guy)!!
+        }
+    }
+    return last_val;
+}

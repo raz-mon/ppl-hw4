@@ -2,8 +2,8 @@
 
 import chai, { expect } from 'chai';
 
-// import { asycMemo, asyncWaterfallWithRetry, getAll, lazyFilter, lazyMap, makePromisedStore, MISSING_KEY } from '../src/part2';
-import {getAll, makePromisedStore, MISSING_KEY } from '../src/part2';
+ import { asycMemo, asyncWaterfallWithRetry, getAll, lazyFilter, lazyMap, makePromisedStore, MISSING_KEY } from '../src/part2';
+//import {asycMemo, getAll, makePromisedStore, MISSING_KEY, lazyFilter, lazyMap } from '../src/part2';
 
 import chaiAsPromised from 'chai-as-promised'
 
@@ -30,7 +30,7 @@ describe('2.1 (PromisedStore)', () => {
         expect(await getAll(store,['b', 'a'])).to.deep.equal([24, 42])
     })
 })
-/*
+
 describe('2.2 (asycMemo)', () => {
     it('memoizes calls', async () => {
         let ret = 'cached'
@@ -39,6 +39,14 @@ describe('2.2 (asycMemo)', () => {
         expect(await memo('a')).to.equal('cached')
         ret = 'new'
         expect(await memo('a')).to.equal('cached')
+    })
+    it('adds new memory', async () => {
+        let ret = 'cached'
+        const memo = asycMemo((x) => ret)
+
+        expect(await memo('a')).to.equal('cached')
+        ret = 'new'
+        expect(await memo('b')).to.equal('new')
     })
 })
 
@@ -79,4 +87,3 @@ describe('2.4 (asyncWaterfallWithRetry)', () => {
         expect(v).to.equal(4)
     }).timeout(5000)
 })
-*/
