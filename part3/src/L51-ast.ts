@@ -336,7 +336,18 @@ const parseClassExp = (params: Sexp[]): Result<ClassExp> =>
     parseGoodClassExp(params[1], params[2], params[3]);
 
 const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Result<ClassExp> =>
-    makeFailure("TODO parseGoodClassExp");
+    isEmpty(varDecls) ? makeFailure("no varDecls = no fields. You need at least one.") :
+    isEmpty(bindings) ? makeFailure("no bindings. You need at least one method") :
+    // Just need to make varDecles with the given varDecls Sexp, and bindings with bindings. But what about the types?
+    
+
+    
+
+/*
+export interface ClassExp {tag: "ClassExp"; typeName: TVar, fields : VarDecl[]; methods: Binding[]; }
+export const makeClassExp = (typeName: TVar, fields : VarDecl[], methods : Binding[]): ClassExp =>
+    ({tag: "ClassExp", typeName: typeName, fields : fields, methods : methods});
+*/
 
 // sexps has the shape (quote <sexp>)
 export const parseLitExp = (param: Sexp): Result<LitExp> =>
