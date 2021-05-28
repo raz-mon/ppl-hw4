@@ -339,6 +339,7 @@ const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Resu
     isEmpty(varDecls) ? makeFailure("no varDecls = no fields. You need at least one.") :
     isEmpty(bindings) ? makeFailure("no bindings. You need at least one method") :
     // Just need to make varDecles with the given varDecls Sexp, and bindings with bindings. But what about the types?
+    
 
     
 
