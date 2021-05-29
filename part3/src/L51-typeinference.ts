@@ -8,7 +8,7 @@ import * as E from "../imp/TEnv";
 import * as T from "./TExp51";
 import { allT, first, rest, isEmpty } from "../shared/list";
 import { isNumber, isString } from '../shared/type-predicates';
-import { Result, makeFailure, makeOk, bind, safe2, zipWithResult, mapResult } from "../shared/result";
+import { Result, makeFailure, makeOk, bind, safe2, zipWithResult, mapResult, zipWithResultCET } from "../shared/result";
 
 // Purpose: Make type expressions equivalent by deriving a unifier
 // Return an error if the types are not unifiable.
@@ -102,8 +102,14 @@ const checkNoOccurrence = (tvar: T.TVar, te: T.TExp, exp: A.Exp): Result<true> =
 // so that the user defined types are known to the type inference system.
 // For each class (class : typename ...) add a pair <class.typename classTExp> to TEnv
 export const makeTEnvFromClasses = (parsed: A.Parsed): E.TEnv => {
-    // TODO makeTEnvFromClasses
-    return E.makeEmptyTEnv();
+    const classes =  A.parsedToClassExps(parsed);
+    if(!isEmpty(classes)){
+        const nameAndtypes = R.map((c: A.ClassExp) => [c.typeName, T.isClassTExp], classes);
+        const orgenizeArry = [R.map((a: any[]) => a[0], nameAndtypes),R.map((a: any[]) => a[1], nameAndtypes)];
+        return E.makeExtendTEnv(orgenizeArry[0], orgenizeArry[1], E.makeEmptyTEnv());      
+    }else{
+        return E.makeEmptyTEnv();      
+    }
 }
 
 // Purpose: Compute the type of a concrete expression
@@ -291,6 +297,14 @@ export const typeofSet = (exp: A.SetExp, tenv: E.TEnv): Result<T.VoidTExp> => {
 //      ...
 //      type<method_k>(class-tenv) = mk
 // Then type<class(type fields methods)>(tend) = = [t1 * ... * tn -> type]
+
 export const typeofClass = (exp: A.ClassExp, tenv: E.TEnv): Result<T.TExp> => {
-    return makeFailure("TODO typeofClass");
+    const vars = R.map((v) => v.var, exp.fields);
+    const texps = R.map((v) => v.texp, exp.fields);
+    const both = R.zip(vars,texps);
+    const newTenv = E.makeExtendTEnv(vars, texps, tenv);
+    const bindingTVars = R.map((b: A.Binding) => b.var.texp, exp.methods);
+    const cexpMethod = mapResult((b: A.Binding) => typeofExp(b.val, newTenv), exp.methods);
+    const constraint = bind(cexpMethod, (types: T.TExp[]) => zipWithResultCET(checkEqualType, types, bindingTVars, exp));
+    return bind(constraint, _ => makeOk(T.makeClassTExp(exp.typeName.var, both)));
 };
