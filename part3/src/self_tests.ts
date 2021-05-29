@@ -1,15 +1,19 @@
 
-import { bind, makeOk } from "../shared/result";
-import { isToken, isSexpString } from "../shared/parser";
 
-import p, { Sexp, SexpString, Token, CompoundSexp } from "s-expression";
+import { expect } from "chai";
+import { isNumExp, isBoolExp, isVarRef, isPrimOp, isProgram, isDefineExp, isVarDecl,
+         isAppExp, isStrExp, isIfExp, isProcExp, isLetExp, isLitExp, isLetrecExp, isSetExp, 
+         isClassExp, parseL5Exp, unparse, Exp, parseL5 } from "../src/L51-ast";
+import { Result, bind, isOkT, makeOk } from "../shared/result";
+import { parse as parseSexp } from "../shared/parser";
+import { isSymbolSExp, makeSymbolSExp } from "../imp/L5-value";
+import { isSymbolTExp, isPairTExp } from "../src/TExp51";
 
 
-let a = p(': Numby (one one) (two (three three))');
-/*
-bind(a, (a_sexp: Sexp) => {
-    console.log(a_sexp)
-    return makeOk("raz");
-});
-*/
-console.log(a);
+const pa = (x: string): Result<Exp> => bind(parseSexp(x), parseL5Exp);
+
+
+
+
+
+console.log(pa("(class (a) ((first (lambda () : number a))))"))
