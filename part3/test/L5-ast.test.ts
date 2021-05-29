@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { isNumExp, isBoolExp, isVarRef, isPrimOp, isProgram, isDefineExp, isVarDecl,
-         isAppExp, isStrExp, isIfExp, isProcExp, isLetExp, isLitExp, isLetrecExp, isSetExp,
-         parseL5Exp, unparse, Exp, parseL5 } from "../src/L51-ast";
+         isAppExp, isStrExp, isIfExp, isProcExp, isLetExp, isLitExp, isLetrecExp, isSetExp, 
+         isClassExp, parseL5Exp, unparse, Exp, parseL5, parsedToClassExps } from "../src/L51-ast";
 import { Result, bind, isOkT, makeOk } from "../shared/result";
 import { parse as parseSexp } from "../shared/parser";
 import { isSymbolSExp, makeSymbolSExp } from "../imp/L5-value";
@@ -109,7 +109,35 @@ describe('L5 Parser', () => {
         expect(p("(set! x 1)")).to.satisfy(isOkT(isSetExp));
     });
 
-});
+
+
+    it ('parses class expressions without TVars by user (added)', () => {
+        console.log(p("(class ((a)) ((first (lambda () : number a))))"))
+        expect(p("(class ((a)) ((first (lambda () : number a))))")).to.satisfy(isOkT(isClassExp));
+    })
+
+    it ('parses class expressions with TVars by user (added)', () => {
+        console.log(p("(class ((a : number)) ((first (lambda () : number a))))"))
+        expect(p("(class (( a : number)) ((first (lambda () : number a))))")).to.satisfy(isOkT(isClassExp));
+    })
+
+    it('performs parsedtoclassExps on a class expression (added)', () => {
+        bind(p("(class ((a : number)) ((first (lambda () : number a))))"), 
+                        (parsed: Exp) => {
+                            console.log("%j", parsedToClassExps(parsed))
+                            return makeOk(5);       // I just want to see what is printed on the console.
+                        });
+    })
+
+    it('performs parsedtoclassExps on a program (added)', () => {
+        bind(p("(L5 (class ((a : number)) ((first (lambda () : number a)))))"), 
+                        (parsed: Exp) => {
+                            console.log(parsedToClassExps(parsed))
+                            return makeOk(5);       // I just want to see what is printed on the console.
+                        });
+    })
+
+}); 
 
 describe('L5 Unparse', () => {
     const roundTrip = (x: string): Result<string> => bind(p(x), unparse);
