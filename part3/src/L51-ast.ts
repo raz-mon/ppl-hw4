@@ -336,12 +336,6 @@ const parseClassExp = (params: Sexp[]): Result<ClassExp> =>
     parseGoodClassExp(params[1], params[2], params[3]);
 
 const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Result<ClassExp> => {
-
-    //console.log("entered 'parseGoodClassExp'");
-    
-    //This is cute and all... But a much easier and more correct way is to use 'parseVarDecl' for the varDecl.
-    
-    
     if(isEmpty(varDecls)){
         return makeFailure("no varDecls = no fields. You need at least one.");
     }
@@ -378,7 +372,6 @@ const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Resu
             }
             else
             return makeFailure(`second argument of the binding must be a lambda expression`);        
-            
         }
         return makeFailure(`To many arguments in ${bindSExp}`);
     }

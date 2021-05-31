@@ -110,13 +110,16 @@ describe('L5 Parser', () => {
     });
 
 
-    it ('parses class expressions without TVars by user (added)', () => {
-        console.log(p("(class ((a)) ((first (lambda () : number a))))"))
+
+
+
+    it ('parses class expressions with TVars by user (added)', () => {
+        console.log("%j", p("(class ((a)) ((first (lambda () : number a))))"))
         expect(p("(class ((a)) ((first (lambda () : number a))))")).to.satisfy(isOkT(isClassExp));
     })
 
-    it ('parses class expressions with TVars by user (added)', () => {
-        console.log(p("(class ((a : number)) ((first (lambda () : number a))))"))
+    it ('parses class expressions without TVars by user (added)', () => {
+        console.log("%j", p("(class ((a : number)) ((first (lambda () : number a))))"))
         expect(p("(class (( a : number)) ((first (lambda () : number a))))")).to.satisfy(isOkT(isClassExp));
     })
 
@@ -131,10 +134,13 @@ describe('L5 Parser', () => {
     it('performs parsedtoclassExps on a program (added)', () => {
         bind(p("(L5 (class ((a : number)) ((first (lambda () : number a)))))"), 
                         (parsed: Exp) => {
-                            console.log(parsedToClassExps(parsed))
+                            console.log("%j", parsedToClassExps(parsed))
                             return makeOk(5);       // I just want to see what is printed on the console.
                         });
     })
+
+
+
 
 }); 
 
