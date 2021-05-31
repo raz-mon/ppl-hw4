@@ -301,10 +301,15 @@ export const typeofSet = (exp: A.SetExp, tenv: E.TEnv): Result<T.VoidTExp> => {
 export const typeofClass = (exp: A.ClassExp, tenv: E.TEnv): Result<T.TExp> => {
     const vars = R.map((v) => v.var, exp.fields);
     const texps = R.map((v) => v.texp, exp.fields);
-    const both = R.zip(vars,texps);
+
+    const Methodvars = R.map((v) => v.var.var, exp.methods);
+    const Methodtexps = R.map((v) => v.var.texp, exp.methods);
+    const both = R.zip(Methodvars,Methodtexps);
+    const tclass = T.makeClassTExp(exp.typeName.var, both);
+
     const newTenv = E.makeExtendTEnv(vars, texps, tenv);
     const bindingTVars = R.map((b: A.Binding) => b.var.texp, exp.methods);
     const cexpMethod = mapResult((b: A.Binding) => typeofExp(b.val, newTenv), exp.methods);
     const constraint = bind(cexpMethod, (types: T.TExp[]) => zipWithResultCET(checkEqualType, types, bindingTVars, exp));
-    return bind(constraint, _ => makeOk(T.makeClassTExp(exp.typeName.var, both)));
+    return bind(constraint, _ => makeOk(T.makeProcTExp(texps, tclass)));
 };
