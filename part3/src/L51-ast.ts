@@ -507,10 +507,17 @@ export const parsedToClassExps = (p: Parsed): ClassExp[] =>
     // This will have to be an AST traversal that "collects" ClassExps.
     // We will use this later in the type inference system, with the whole program as input.
     isProgram(p) ? (p.exps).reduce((prev: ClassExp[], curr: Exp) => isClassExp(curr) ? prev.concat([curr]) : prev, []) :
+    //isArray(p) ? (p).reduce((prev: ClassExp[], curr: Exp) => isClassExp(curr) ? prev.concat([curr]) : prev, []) :
+    // This should be fine with an input that is a program.. The array part is for the tests and also useless because the 'p' func returns on Exp not Program
     isClassExp(p) ? [p] : [];
+    
+
+// L51 
+export const classExpToClassTExp = (ce: ClassExp): ClassTExp => 
+    makeClassTExp(ce.typeName.var, map((binding: Binding) => [binding.var.var, binding.var.texp], ce.methods));
 
 
-
+    
 
 /*
     // let classExps: ClassExp[] = [];
@@ -542,11 +549,6 @@ export const parsedToClassExps = (p: Parsed): ClassExp[] =>
     }
     */
 
-
-    // L51 
-    export const classExpToClassTExp = (ce: ClassExp): ClassTExp => 
-    makeClassTExp(ce.typeName.var, map((binding: Binding) => [binding.var.var, binding.var.texp], ce.methods));
-    
     
 
 
