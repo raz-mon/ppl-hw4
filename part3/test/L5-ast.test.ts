@@ -110,7 +110,6 @@ describe('L5 Parser', () => {
     });
 
 
-
     it ('parses class expressions without TVars by user (added)', () => {
         console.log(p("(class ((a)) ((first (lambda () : number a))))"))
         expect(p("(class ((a)) ((first (lambda () : number a))))")).to.satisfy(isOkT(isClassExp));

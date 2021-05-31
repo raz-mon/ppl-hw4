@@ -12,7 +12,7 @@ import { allT, first, rest, second, isEmpty } from '../shared/list';
 import { parse as p, isToken, isSexpString } from "../shared/parser";
 import { Result, bind, makeFailure, mapResult, makeOk, safe2, safe3 } from "../shared/result";
 import { isArray, isString, isNumericString, isIdentifier } from "../shared/type-predicates";
-import { isTVar, makeFreshTVar, makeTVar, parseTExp, unparseTExp, TVar, TExp, makeVoidTExp } from './TExp51';
+import { isTVar, makeFreshTVar, makeTVar, parseTExp, unparseTExp,makeProcTExp, TVar, TExp, makeVoidTExp } from './TExp51';
 import { makeClassTExp, ClassTExp } from "./TExp51";
 
 /*
@@ -336,8 +336,11 @@ const parseClassExp = (params: Sexp[]): Result<ClassExp> =>
     parseGoodClassExp(params[1], params[2], params[3]);
 
 const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Result<ClassExp> => {
-    
+
     //console.log("entered 'parseGoodClassExp'");
+    
+    //This is cute and all... But a much easier and more correct way is to use 'parseVarDecl' for the varDecl.
+    
     
     if(isEmpty(varDecls)){
         return makeFailure("no varDecls = no fields. You need at least one.");
@@ -345,7 +348,7 @@ const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Resu
     else if (isEmpty(bindings)){
         return makeFailure("no bindings. You need at least one method");
     }
-    
+    /*
     const Sexp2VarDecl = (svd: Sexp): Result<VarDecl> => {
         if (!isArray(svd))
         return makeFailure(`(${svd}) is not an array.`);
@@ -355,19 +358,21 @@ const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Resu
         return makeOk(makeVarDecl(svd[0].toString(), makeFreshTVar()));
         return makeFailure('Problem with fiedls. Should look like: f_name [: TVar?]');    
     }
-    
+    */
     const Sexp2Binding = (bindSExp: Sexp): Result<Binding> => {
         if (!isArray(bindSExp))
-        return makeFailure(`${bindSExp} is not an array`)
+            return makeFailure(`${bindSExp} is not an array`)
         else if (bindSExp.length === 2){
             if (!isToken(bindSExp[0]))
-            return makeFailure(`the first argument of the binding must be a Token (string)`)
+                return makeFailure(`the first argument of the binding must be a Token (string)`)
             // parseProcExp that lies in bindSExp[1].
             if (isArray(bindSExp[1]) && bindSExp[1][0] === 'lambda'){
                 const procSExp: Sexp = rest(bindSExp[1]);       // All the procExp without the 'lambda'.
                 const parsedProc: Result<ProcExp> = parseProcExp(first(procSExp), rest(procSExp));
                 // Gave a 'void' type for the varDecl. What should we put here??!@#
-                const varD: Result<VarDecl> = makeOk(makeVarDecl(bindSExp[0].toString(), makeVoidTExp()));
+                //const varD: Result<VarDecl> = makeOk(makeVarDecl(bindSExp[0].toString(), makeVoidTExp() ));
+                const varD: Result<VarDecl> = bind(parsedProc, (pp) => makeOk(makeVarDecl(bindSExp[0].toString(),
+                                makeProcTExp(  map((vd: VarDecl) => vd.texp, pp.args) , pp.returnTE) )));
                 return bind(parsedProc, (parsedProcVal) => bind(varD, (varDVal) => makeOk(makeBinding(varDVal, parsedProcVal))));
                 //return safe2<VarDecl, CExp, Binding>(makeOk(makeBinding))(varD, parsedProc);
             }
@@ -381,10 +386,10 @@ const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Resu
     const type_Name: TVar = makeTVar(typeName.toString());
     
     if (isArray(varDecls)){
-        const VarDeclArr: Result<VarDecl[]> = mapResult((svd: Sexp) => Sexp2VarDecl(svd), varDecls);
+        const VarDeclArr: Result<VarDecl[]> = mapResult((svd: Sexp) => parseVarDecl(svd), varDecls);
         if(isArray(bindings)){
             const BindingsArr: Result<Binding[]> = mapResult((bindSexp: Sexp) => Sexp2Binding(bindSexp), bindings);
-            return bind(VarDeclArr, (vdav) => bind(BindingsArr, (bdav) => makeOk(makeClassExp(type_Name, vdav, bdav))));
+            return bind(VarDeclArr, (vda) => bind(BindingsArr, (bda) => makeOk(makeClassExp(type_Name, vda, bda))));
         }
     }
     else{
@@ -394,20 +399,6 @@ const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Resu
     
     // Check that the typename isn't a primitive one ?
 }
-
-/*
-export interface Binding {tag: "Binding"; var: VarDecl; val: CExp; }
-export const makeBinding = (v: VarDecl, val: CExp): Binding =>
-    ({tag: "Binding", var: v, val: val});
-export const isBinding = (x: any): x is Binding => x.tag === "Binding";
-*/
-    
-//    |  ( class [: <typeVar>]? ( <var>+ ) ( <binding>+ ) ClassExp(typeName: TVar, args:VarDecl[],bindings:Binding[])) //L51
-/*
-export interface ClassExp {tag: "ClassExp"; typeName: TVar, fields : VarDecl[]; methods: Binding[]; }
-export const makeClassExp = (typeName: TVar, fields : VarDecl[], methods : Binding[]): ClassExp =>
-    ({tag: "ClassExp", typeName: typeName, fields : fields, methods : methods});
-*/
 
 // sexps has the shape (quote <sexp>)
 export const parseLitExp = (param: Sexp): Result<LitExp> =>
