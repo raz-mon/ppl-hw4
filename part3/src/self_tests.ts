@@ -10,10 +10,12 @@ import { isSymbolSExp, makeSymbolSExp } from "../imp/L5-value";
 import { isSymbolTExp, isPairTExp } from "../src/TExp51";
 
 
-const pa = (x: string): Result<Exp> => bind(parseSexp(x), parseL5Exp);
+const p = (x: string): Result<Exp> => bind(parseSexp(x), parseL5Exp);
 
 
 
+p("(letrec ((e (lambda (x) x))) (e 2))")
+//console.log(makeOk("raz"));
 
 
-console.log(pa("(class (a) ((first (lambda () : number a))))"))
+//console.log(p("(class (a) ((first (lambda () : number a))))"))

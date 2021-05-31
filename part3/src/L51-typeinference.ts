@@ -186,6 +186,8 @@ export const typeofProc = (proc: A.ProcExp, tenv: E.TEnv): Result<T.TExp> => {
 // then type<(rator rand1...randn)>(tenv) = t
 // NOTE: This procedure is different from the one in L5-typecheck
 export const typeofApp = (app: A.AppExp, tenv: E.TEnv): Result<T.TExp> => {
+    // Check if app is a class object, if it is -> make constaint that the LitExp on the right is indeed a method of the class.
+    //checkForTypeName(app, tenv);
     const ratorTE = typeofExp(app.rator, tenv);
     const randsTE = mapResult((rand) => typeofExp(rand, tenv), app.rands);
     const returnTE = T.makeFreshTVar();
