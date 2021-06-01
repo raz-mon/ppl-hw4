@@ -104,16 +104,30 @@ const checkNoOccurrence = (tvar: T.TVar, te: T.TExp, exp: A.Exp): Result<true> =
 export const makeTEnvFromClasses = (parsed: A.Parsed): E.TEnv => {
 //    const classes =  A.parsedToClassExps(parsed);
 //    if(!isEmpty(classes)){
-//        const nameAndtypes = R.map((c: A.ClassExp) => [c.typeName, 
-//            T.makeClassTExp(c.typeName.var, R.map((m: A.Binding) => [m.var.var, m.var.texp], c.methods))]
-//            , classes);
-//        const orgenizeArry = [R.map((a: any[]) => a[0], nameAndtypes),R.map((a: any[]) => a[1], nameAndtypes)];
-//        return E.makeExtendTEnv(orgenizeArry[0], orgenizeArry[1], E.makeEmptyTEnv());      
+//        const classt = R.map((c: A.ClassExp) => T.makeClassTExp(c.typeName.var, 
+//            R.zip(R.map((b: A.Binding) => b.var.var, c.methods), R.map((b: A.Binding) => b.var.texp, c.methods))), classes);
+//        return E.makeExtendTEnv(R.map((c: A.ClassExp) => c.typeName.var, classes),classt, E.makeEmptyTEnv());      
 //    }else{
 //        return E.makeEmptyTEnv();      
 //    }
-return E.makeEmptyTEnv();
+    return E.makeEmptyTEnv();
 }
+
+
+/*          Older not correct version.
+    const classes =  A.parsedToClassExps(parsed);
+    if(!isEmpty(classes)){
+        const nameAndtypes = R.map((c: A.ClassExp) => [c.typeName.var, 
+            T.makeClassTExp(c.typeName.var, R.map((m: A.Binding) => [m.var.var, m.var.texp], c.methods))]
+            , classes);
+        //const orgenizeArry = [R.map((a: any[]) => a[0], nameAndtypes),R.map((a: any[]) => a[1], nameAndtypes)];
+        return E.makeExtendTEnv(R.map((nat) => nat[0], nameAndtypes), R.map((nat) => nat[1], nameAndtypes), E.makeEmptyTEnv());
+        //nameAndtypes[0], nameAndtypes[1], E.makeEmptyTEnv());      
+    }else{
+        return E.makeEmptyTEnv();      
+    }
+*/
+
 
 // Purpose: Compute the type of a concrete expression
 export const inferTypeOf = (concreteExp: string): Result<string> =>
@@ -189,8 +203,6 @@ export const typeofProc = (proc: A.ProcExp, tenv: E.TEnv): Result<T.TExp> => {
 // then type<(rator rand1...randn)>(tenv) = t
 // NOTE: This procedure is different from the one in L5-typecheck
 export const typeofApp = (app: A.AppExp, tenv: E.TEnv): Result<T.TExp> => {
-    // Check if app is a class object, if it is -> make constaint that the LitExp on the right is indeed a method of the class.
-    //checkForTypeName(app, tenv);
     const ratorTE = typeofExp(app.rator, tenv);
     const randsTE = mapResult((rand) => typeofExp(rand, tenv), app.rands);
     const returnTE = T.makeFreshTVar();
@@ -276,6 +288,7 @@ const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TE
 //      - for a symbol - record the value of the symbol in the SymbolTExp
 //        so that precise type checking can be made on ground symbol values.
 export const typeofLit = (exp: A.LitExp): Result<T.TExp> =>
+    // Add some test for the input exp.
     V.isSymbolSExp(exp.val) ? makeOk(T.makeSymbolTExp(exp.val)) :
     makeOk(T.makePairTExp());
 

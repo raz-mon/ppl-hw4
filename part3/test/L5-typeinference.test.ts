@@ -212,7 +212,7 @@ describe('L5 Type Inference', () => {
 
         it('infers the type of class', () => {
             expect(verifyTeOfExprWithInference("(class : c1 ((field1 : number)) ((get (lambda () : number field1))))", 
-                                               "(number -> (class cell (get : (Empty -> number))))")).to.deep.equal(makeOk(true));
+                                               "(number -> (class c1 (get : (Empty -> number))))")).to.deep.equal(makeOk(true));
         });
 
         it('infers the type of a class constructor', () => {
@@ -221,20 +221,20 @@ describe('L5 Type Inference', () => {
                                 ((f : T) 
                                  (r : T))
                                 ((first (lambda () f)) 
-                                 (rest (lambda () r)))))
+                                 (rest (lambda () r)))))            // --> pair is a 'class-constructor' (type-name = pair)
                  (pair 1 2)
                  pair)`;
 
-                /*
+                
                 //added. Just to see that the parsing is correct.
-                console.log(JSON.stringify(parse(`(L5 (define pair (class : pair 
+                console.log(JSON.stringify(inferTypeOf(`(L5 (define pair (class : pair 
                     ((f : T) 
                      (r : T))
                     ((first (lambda () f)) 
                      (rest (lambda () r)))))
                         (pair 1 2)
                         pair)`)));
-                */
+                
                
             expect(verifyTeOfExprWithInference(program1, `(number * number -> (class pair (first : (Empty -> number)) (rest : (Empty -> number))))`)).to.deep.equal(makeOk(true));
 
