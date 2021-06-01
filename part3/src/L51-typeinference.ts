@@ -104,9 +104,9 @@ const checkNoOccurrence = (tvar: T.TVar, te: T.TExp, exp: A.Exp): Result<true> =
 export const makeTEnvFromClasses = (parsed: A.Parsed): E.TEnv => {
     const classes =  A.parsedToClassExps(parsed);
     if(!isEmpty(classes)){
-        const nameAndtypes = R.map((c: A.ClassExp) => [c.typeName, T.isClassTExp], classes);
-        const orgenizeArry = [R.map((a: any[]) => a[0], nameAndtypes),R.map((a: any[]) => a[1], nameAndtypes)];
-        return E.makeExtendTEnv(orgenizeArry[0], orgenizeArry[1], E.makeEmptyTEnv());      
+        const classt = R.map((c: A.ClassExp) => T.makeClassTExp(c.typeName.var, 
+            R.zip(R.map((b: A.Binding) => b.var.var, c.methods), R.map((b: A.Binding) => b.var.texp, c.methods))), classes);
+        return E.makeExtendTEnv(R.map((c: A.ClassExp) => c.typeName.var, classes),classt, E.makeEmptyTEnv());      
     }else{
         return E.makeEmptyTEnv();      
     }
@@ -297,19 +297,19 @@ export const typeofSet = (exp: A.SetExp, tenv: E.TEnv): Result<T.VoidTExp> => {
 //      ...
 //      type<method_k>(class-tenv) = mk
 // Then type<class(type fields methods)>(tend) = = [t1 * ... * tn -> type]
-
+//Added
 export const typeofClass = (exp: A.ClassExp, tenv: E.TEnv): Result<T.TExp> => {
-    const vars = R.map((v) => v.var, exp.fields);
-    const texps = R.map((v) => v.texp, exp.fields);
+    const vars = R.map((v) => v.var, exp.fields);           // fields: string[]
+    const texps = R.map((v) => v.texp, exp.fields);         // fields: TEXP[]
 
-    const Methodvars = R.map((v) => v.var.var, exp.methods);
-    const Methodtexps = R.map((v) => v.var.texp, exp.methods);
-    const both = R.zip(Methodvars,Methodtexps);
-    const tclass = T.makeClassTExp(exp.typeName.var, both);
+    //const Methodvars = R.map((v) => v.var.var, exp.methods);        //Methods: string[]
+    //const Methodtexps = R.map((v) => v.var.texp, exp.methods);      //Methods: Texp[]
+    //const both = R.zip(Methodvars,Methodtexps);                     //Methods <string, Texp>[]
+    //const tclass = T.makeClassTExp(exp.typeName.var, both);
 
     const newTenv = E.makeExtendTEnv(vars, texps, tenv);
     const bindingTVars = R.map((b: A.Binding) => b.var.texp, exp.methods);
-    const cexpMethod = mapResult((b: A.Binding) => typeofExp(b.val, newTenv), exp.methods);
+    const cexpMethod = mapResult((b: A.Binding) => typeofExp(b.val, newTenv), exp.methods);         // class(method) -> vardecl , binding
     const constraint = bind(cexpMethod, (types: T.TExp[]) => zipWithResultCET(checkEqualType, types, bindingTVars, exp));
-    return bind(constraint, _ => makeOk(T.makeProcTExp(texps, tclass)));
+    return bind(constraint, _ => makeOk(T.makeProcTExp(texps, exp.typeName)));
 };
