@@ -301,7 +301,7 @@ export const typeofSet = (exp: A.SetExp, tenv: E.TEnv): Result<T.VoidTExp> => {
 // If   type<method_1>(class-tenv) = m1
 //      ...
 //      type<method_k>(class-tenv) = mk
-// Then type<class(type fields methods)>(tend) = = [t1 * ... * tn -> type]
+// Then type<class(type fields methods)>(tenv) = [t1 * ... * tn -> type]
 
 export const typeofClass = (exp: A.ClassExp, tenv: E.TEnv): Result<T.TExp> => {
     const vars = R.map((v) => v.var, exp.fields);

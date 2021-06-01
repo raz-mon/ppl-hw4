@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { inferTypeOf, typeofExp } from "../src/L51-typeinference";
-import { parseL5Exp, Exp } from "../src/L51-ast";
+import { parse, parseL5Exp, Exp } from "../src/L51-ast";
 import { makeExtendTEnv, makeEmptyTEnv } from "../imp/TEnv";
 import { makeNumTExp } from "../src/TExp51";
 import { verifyTeOfExprWithInference } from "./test-helpers";
@@ -224,6 +224,18 @@ describe('L5 Type Inference', () => {
                                  (rest (lambda () r)))))
                  (pair 1 2)
                  pair)`;
+
+                /*
+                //added. Just to see that the parsing is correct.
+                console.log(JSON.stringify(parse(`(L5 (define pair (class : pair 
+                    ((f : T) 
+                     (r : T))
+                    ((first (lambda () f)) 
+                     (rest (lambda () r)))))
+                        (pair 1 2)
+                        pair)`)));
+                */
+               
             expect(verifyTeOfExprWithInference(program1, `(number * number -> (class pair (first : (Empty -> number)) (rest : (Empty -> number))))`)).to.deep.equal(makeOk(true));
 
             const program2 = 
