@@ -6,6 +6,7 @@ import { makeNumTExp } from "../src/TExp51";
 import { verifyTeOfExprWithInference } from "./test-helpers";
 import { makeOk, bind, isFailure } from '../shared/result';
 import { parse as p } from "../shared/parser";
+import { Sexp } from 's-expression';
 
 describe('L5 Type Inference', () => {
     describe('inferTypeOf', () => {
@@ -235,6 +236,8 @@ describe('L5 Type Inference', () => {
                                  (scale (lambda (k) (pair (* k f) (* k r)))))))
                  (pair 1 2)
                  pair)`;
+            //console.log(bind(p(program2), (sexp: Sexp) => parseL5Exp(sexp)));
+            console.log(p(program2));
             expect(verifyTeOfExprWithInference(program2, `(number * number -> (class pair (first : (Empty -> number)) (rest : (Empty -> number)) (scale : (number -> pair))))`)).to.deep.equal(makeOk(true));
         });
 

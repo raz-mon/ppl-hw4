@@ -61,6 +61,15 @@ const checkClassEqualTypes = (te1: T.ClassTExp, te2: T.ClassTExp, exp: A.Exp): R
 // A class can match a proc (symbol -> T) if the symbol is bound and is in the interface of the class
 // In this case T = typeOf(method)
 const checkClassProcEqualTypes = (ct: T.ClassTExp, pt: T.ProcTExp, exp: A.Exp): Result<true> => {
+
+    console.log("Proc Exp: " + JSON.stringify(pt));
+    console.log("pt.paramTEs.length: " + pt.paramTEs.length);
+    console.log("T.isSymbolTExp(pt.paramTEs[0] " + T.isSymbolTExp(pt.paramTEs[0]));
+    if(T.isSymbolTExp(pt.paramTEs[0])){
+        console.log("pt.paramTEs[0].val: " + pt.paramTEs[0].val);
+    }
+
+
     if ((pt.paramTEs.length != 1) || (! T.isSymbolTExp(pt.paramTEs[0])) || (! pt.paramTEs[0].val))
         return makeFailure<true>('A class can only match a proc of 1 ground symbol param');
     const method = pt.paramTEs[0].val.val;
@@ -103,6 +112,7 @@ const checkNoOccurrence = (tvar: T.TVar, te: T.TExp, exp: A.Exp): Result<true> =
 // For each class (class : typename ...) add a pair <class.typename classTExp> to TEnv
 export const makeTEnvFromClasses = (parsed: A.Parsed): E.TEnv => {
     const classes =  A.parsedToClassExps(parsed);
+    //console.log("makeTEnvFromClasses classes: " + JSON.stringify(classes));
     if(!isEmpty(classes)){
         const classt = R.map((c: A.ClassExp) => T.makeClassTExp(c.typeName.var, 
             R.zip(R.map((b: A.Binding) => b.var.var, c.methods), R.map((b: A.Binding) => b.var.texp, c.methods))), classes);
@@ -110,7 +120,24 @@ export const makeTEnvFromClasses = (parsed: A.Parsed): E.TEnv => {
     }else{
         return E.makeEmptyTEnv();      
     }
+    //return E.makeEmptyTEnv();
 }
+
+
+/*          Older not correct version.
+    const classes =  A.parsedToClassExps(parsed);
+    if(!isEmpty(classes)){
+        const nameAndtypes = R.map((c: A.ClassExp) => [c.typeName.var, 
+            T.makeClassTExp(c.typeName.var, R.map((m: A.Binding) => [m.var.var, m.var.texp], c.methods))]
+            , classes);
+        //const orgenizeArry = [R.map((a: any[]) => a[0], nameAndtypes),R.map((a: any[]) => a[1], nameAndtypes)];
+        return E.makeExtendTEnv(R.map((nat) => nat[0], nameAndtypes), R.map((nat) => nat[1], nameAndtypes), E.makeEmptyTEnv());
+        //nameAndtypes[0], nameAndtypes[1], E.makeEmptyTEnv());      
+    }else{
+        return E.makeEmptyTEnv();      
+    }
+*/
+
 
 // Purpose: Compute the type of a concrete expression
 export const inferTypeOf = (concreteExp: string): Result<string> =>
@@ -186,6 +213,17 @@ export const typeofProc = (proc: A.ProcExp, tenv: E.TEnv): Result<T.TExp> => {
 // then type<(rator rand1...randn)>(tenv) = t
 // NOTE: This procedure is different from the one in L5-typecheck
 export const typeofApp = (app: A.AppExp, tenv: E.TEnv): Result<T.TExp> => {
+    if(A.isClassExp(app.rator)){
+        if(app.rands.length != 1){
+            return makeFailure("A class can only match a proc of 1 ground symbol param");
+        }else{
+            const cls = app.rator;
+            const method = app.rands[0];
+            if(!A.isLitExp(method)){ return makeFailure("A class can only match a proc of 1 ground symbol param"); }
+            const constraintClass = bind(typeofLit(method), (littexp: T.TExp) => T.isSymbolTExp(littexp) && littexp ? 
+            bind(E.applyTEnv(tenv, cls.typeName.var), (texp: T.TExp) => T.isClassTExp(texp) ? T.classTExpMethodTExp(texp, littexp.val)) : );
+        }
+    }
     const ratorTE = typeofExp(app.rator, tenv);
     const randsTE = mapResult((rand) => typeofExp(rand, tenv), app.rands);
     const returnTE = T.makeFreshTVar();
@@ -259,18 +297,27 @@ export const typeofProgram = (exp: A.Program, tenv: E.TEnv): Result<T.TExp> =>
     // similar to typeofExps but threads variables into tenv after define-exps
     isEmpty(exp.exps) ? makeFailure("Empty program") :
     typeofProgramExps(first(exp.exps), rest(exp.exps), tenv);
-
+/*
 const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> => 
     isEmpty(exps) ? typeofExp(exp, tenv) :
     A.isDefineExp(exp) ? bind(typeofDefine(exp, E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv)),
     _ => typeofProgramExps(first(exps), rest(exps), E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv))) :
     bind(typeofExp(exp, tenv), _ => typeofProgramExps(first(exps), rest(exps), tenv));
+*/
 
+const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> => 
+    isEmpty(exps) ? typeofExp(exp, tenv) :
+    A.isDefineExp(exp) ? (A.isClassExp(exp.val) ? bind(E.applyTEnv(tenv , exp.val.typeName.var), _ => typeofProgramExps(first(exps), rest(exps), tenv)) :
+    bind(typeofDefine(exp, E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv)),
+    _ => typeofProgramExps(first(exps), rest(exps), E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv)))) :
+    bind(typeofExp(exp, tenv), _ => typeofProgramExps(first(exps), rest(exps), tenv));
+    
 // Purpose: compute the type of a literal expression
 //      - Only need to cover the case of Symbol and Pair
 //      - for a symbol - record the value of the symbol in the SymbolTExp
 //        so that precise type checking can be made on ground symbol values.
 export const typeofLit = (exp: A.LitExp): Result<T.TExp> =>
+    // Add some test for the input exp.
     V.isSymbolSExp(exp.val) ? makeOk(T.makeSymbolTExp(exp.val)) :
     makeOk(T.makePairTExp());
 
@@ -296,20 +343,25 @@ export const typeofSet = (exp: A.SetExp, tenv: E.TEnv): Result<T.VoidTExp> => {
 // If   type<method_1>(class-tenv) = m1
 //      ...
 //      type<method_k>(class-tenv) = mk
-// Then type<class(type fields methods)>(tend) = = [t1 * ... * tn -> type]
-//Added
-export const typeofClass = (exp: A.ClassExp, tenv: E.TEnv): Result<T.TExp> => {
-    const vars = R.map((v) => v.var, exp.fields);           // fields: string[]
-    const texps = R.map((v) => v.texp, exp.fields);         // fields: TEXP[]
+// Then type<class(type fields methods)>(tenv) = [t1 * ... * tn -> type]
 
-    //const Methodvars = R.map((v) => v.var.var, exp.methods);        //Methods: string[]
-    //const Methodtexps = R.map((v) => v.var.texp, exp.methods);      //Methods: Texp[]
-    //const both = R.zip(Methodvars,Methodtexps);                     //Methods <string, Texp>[]
-    //const tclass = T.makeClassTExp(exp.typeName.var, both);
+export const typeofClass = (exp: A.ClassExp, tenv: E.TEnv): Result<T.TExp> => {
+    const vars = R.map((v) => v.var, exp.fields);
+    const texps = R.map((v) => v.texp, exp.fields);
+    const both = R.zip(vars,texps);
+
+    const meth_vars = R.map((b: A.Binding) => b.var.var, exp.methods);
+    const meth_types = R.map((b: A.Binding) => b.var.texp, exp.methods);
+    const newBoth = R.zip(meth_vars, meth_types);
 
     const newTenv = E.makeExtendTEnv(vars, texps, tenv);
-    const bindingTVars = R.map((b: A.Binding) => b.var.texp, exp.methods);
-    const cexpMethod = mapResult((b: A.Binding) => typeofExp(b.val, newTenv), exp.methods);         // class(method) -> vardecl , binding
-    const constraint = bind(cexpMethod, (types: T.TExp[]) => zipWithResultCET(checkEqualType, types, bindingTVars, exp));
-    return bind(constraint, _ => makeOk(T.makeProcTExp(texps, exp.typeName)));
+    //const bindingTVars = R.map((b: A.Binding) => b.var.texp, exp.methods);
+    const cexpMethods = mapResult((b: A.Binding) => typeofExp(b.val, newTenv), exp.methods);
+    const constraint1 = bind(cexpMethods, (types: T.TExp[]) => zipWithResultCET(checkEqualType, types, meth_types, exp));
+    //console.log("Exp name in typeofclass: " + exp.typeName.var);
+    //const constraint2 = bind(E.applyTEnv(tenv, exp.typeName.var), (texp: T.TExp) => texp.tag == exp.typeName.var ? makeOk(true) : makeFailure(`Wrong type name - expected ${texp.tag} , actual ${exp.typeName.var}`));
+    const constraint2 = bind(E.applyTEnv(tenv, exp.typeName.var), (texp: T.TExp) => makeOk(true));
+    const totalConst = safe2((bool1: boolean[], bool2: any) => makeOk(true))(constraint1,constraint2);
+    return bind(totalConst, _ => makeOk(T.makeProcTExp(texps, T.makeClassTExp(exp.typeName.var, newBoth))));
+    //return bind(totalConst, _ => makeOk(T.makeProcTExp(texps, exp.typeName)));
 };

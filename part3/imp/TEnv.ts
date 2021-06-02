@@ -26,9 +26,28 @@ export const makeExtendTEnv = (vars: string[], texps: TExp[], tenv: TEnv): Exten
     ({tag: "ExtendTEnv", vars: vars, texps: texps, tenv: tenv});
 export const isExtendTEnv = (x: any): x is ExtendTEnv => x.tag === "ExtendTEnv";
 
-export const applyTEnv = (tenv: TEnv, v: string): Result<TExp> =>
-    isEmptyTEnv(tenv) ? makeFailure(`Type Variable not found ${v}`) :
-    applyExtendTEnv(tenv.texps, tenv.tenv, v, tenv.vars.indexOf(v));
+//export const applyTEnv = (tenv: TEnv, v: string): Result<TExp> =>
+//    isEmptyTEnv(tenv) ? makeFailure(`Type Variable not found ${v}`) :
+//    applyExtendTEnv(tenv.texps, tenv.tenv, v, tenv.vars.indexOf(v));
+
+export const applyTEnv = (tenv: TEnv, v: string): Result<TExp> => {
+    if(isEmptyTEnv(tenv)){
+        return makeFailure(`Type Variable not found ${v}`);
+    }else{
+        //console.log("Tenv: ");
+        for(let var1 of tenv.vars){
+            //console.log("var: " + var1);
+        }
+        for(let tx of tenv.texps){
+            //console.log("texp: " + tx.tag);
+        }
+        //console.log("index of texp: " + tenv.vars.indexOf(v));
+        //if(tenv.vars.indexOf(v) != -1){
+        //    console.log(tenv.vars[tenv.vars.indexOf(v)]);
+        //}
+        return applyExtendTEnv(tenv.texps, tenv.tenv, v, tenv.vars.indexOf(v));
+    }
+}
 
 export const applyExtendTEnv = (texps: TExp[], tenv: TEnv, v: string, pos: number): Result<TExp> =>
     (pos === -1) ? applyTEnv(tenv, v) :

@@ -112,12 +112,13 @@ describe('L5 Parser', () => {
 
 
     it ('parses class expressions without TVars by user (added)', () => {
-        console.log(p("(class ((a)) ((first (lambda () : number a))))"))
-        expect(p("(class ((a)) ((first (lambda () : number a))))")).to.satisfy(isOkT(isClassExp));
+        //console.log(p("(class ((a)) ((first (lambda () : number a))))"))
+        //expect(p("(class ((a)) ((first (lambda () : number a))))")).to.satisfy(isOkT(isClassExp));
+        expect(p("(class (( a : number)) ((first (lambda () : number a))))")).to.satisfy(isOkT(isClassExp));
     })
 
     it ('parses class expressions with TVars by user (added)', () => {
-        console.log(p("(class ((a : number)) ((first (lambda () : number a))))"))
+        //console.log(p("(class ((a : number)) ((first (lambda () : number a))))"))
         expect(p("(class (( a : number)) ((first (lambda () : number a))))")).to.satisfy(isOkT(isClassExp));
     })
 
