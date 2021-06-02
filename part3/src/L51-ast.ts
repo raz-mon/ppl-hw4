@@ -503,88 +503,48 @@ const unparseClassExp = (ce: ClassExp, unparseWithTVars?: boolean): Result<strin
 // L51: Collect named types in AST
 // Collect class expressions in parsed AST so that they can be passed to the type inference module
 
-export const parsedToClassExps = (p: Parsed): ClassExp[] => 
+export const parsedToClassExps = (p: Parsed): ClassExp[] =>
     // This will have to be an AST traversal that "collects" ClassExps.
     // We will use this later in the type inference system, with the whole program as input.
-    isProgram(p) ? (p.exps).reduce((prev: ClassExp[], curr: Exp) => isClassExp(curr) ? prev.concat([curr]) : prev, []) :
-    //isArray(p) ? (p).reduce((prev: ClassExp[], curr: Exp) => isClassExp(curr) ? prev.concat([curr]) : prev, []) :
-    // This should be fine with an input that is a program.. The array part is for the tests and also useless because the 'p' func returns on Exp not Program
-    isClassExp(p) ? [p] : [];
-    
 
-// L51 
+    isNumExp(p) ? [] : 
+    isStrExp(p) ? [] : 
+    isBoolExp(p) ? [] : 
+    isPrimOp(p) ? [] : 
+    isVarRef(p) ? [] : 
+    // AppExp | IfExp | ProcExp | LetExp | LitExp | LetrecExp | SetExp
+    isAppExp(p) ? [] : 
+    isIfExp(p) ? [] : 
+    isLetExp(p) ? parseLetToClassExps(p.bindings) : 
+    isLetrecExp(p) ? parseLetrecToClassExps(p.bindings) : 
+    isProcExp(p) ? [] :             // We declare classes only as stand-alone expression or in defineExps or let\letrec
+    isLitExp(p) ? [] : 
+    isSetExp(p) ? [] :
+    isClassExp(p) ? [p] :
+    // DefineExp | Program
+    isDefineExp(p) ? parseDefineToClassExps(p.val) :
+    isProgram(p) ? parseProgramToClasses(p.exps) :
+    p;
+
+export const parseLetToClassExps = (bindings: Binding[]): ClassExp[] => {
+    return bindings.reduce((acc: ClassExp[], curr: Binding) => isClassExp(curr.val) ? acc.concat([curr.val]) : acc, []);
+}
+
+export const parseLetrecToClassExps = (bindings: Binding[]): ClassExp[] => {
+    return bindings.reduce((acc: ClassExp[], curr: Binding) => isClassExp(curr.val) ? acc.concat([curr.val]) : acc, []);
+}
+
+export const parseDefineToClassExps = (defVal: CExp): ClassExp[] => 
+    isClassExp(defVal) ? [defVal] : []
+
+export const parseProgramToClasses = (exps: Exp[]): ClassExp[] => 
+    exps.reduce((acc: ClassExp[], curr: Exp) => acc.concat(parsedToClassExps(curr)), []);
+
+
+    // L51 
 export const classExpToClassTExp = (ce: ClassExp): ClassTExp => 
     makeClassTExp(ce.typeName.var, map((binding: Binding) => [binding.var.var, binding.var.texp], ce.methods));
 
-
-    
-
-/*
-    // let classExps: ClassExp[] = [];
-
-    const collectClassL5Exp = (e: Exp): Exp => {
-        return isClassExp(e) ? e : makeNumExp(0);
-    }
-
-    const collectClassesFromCollection = (Exps: Exp[]): ClassExp[] => {
-        // const classExps: ClassExp[] = filter((exp: Exp) => isClassExp(exp), Exps);
-        let classExps: ClassExp[] = [];
-        Exps.forEach((exp: Exp) => {
-                        if (isClassExp(exp)) 
-                            classExps.push(exp)}
-                    );
-        return classExps;
-    }
-
-    if (isProgram(p)){
-        const checkedExps: Exp[] = map(collectClassL5Exp, p.exps);
-        const classExps: ClassExp[] = collectClassesFromCollection(checkedExps);
-        return classExps;
-    }
-    
-    else if (isExp(p))
-        return isClassExp(p) ? [p] : [];
-    else
-        return classExps;
-    }
-    */
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /*
-        isNumExp(e) ? :
-        isStrExp(e) ? :
-        isBoolExp(e) ? :
-        isPrimOp(e) ? :
-        isVarRef(e) ? :
-        // AppExp | IfExp | ProcExp | LetExp | LitExp | LetrecExp | SetExp
-        isAppExp(e) ? :
-        isIfExp(e) ? :
-        isLetExp(e) ? :
-        isLetrecExp(e) ? :
-        isProcExp(e) ? :
-        isLitExp(e) ? :
-        isSetExp(e) ? :
-        isClassExp(e) ? :
-        // DefineExp | Program
-        isDefineExp(e) ? :
-        isProgram(e) ?  :
-        e;
-    */
 
 
 

@@ -203,6 +203,9 @@ export const typeofProc = (proc: A.ProcExp, tenv: E.TEnv): Result<T.TExp> => {
 // then type<(rator rand1...randn)>(tenv) = t
 // NOTE: This procedure is different from the one in L5-typecheck
 export const typeofApp = (app: A.AppExp, tenv: E.TEnv): Result<T.TExp> => {
+
+    // Add here the case where the operator is of type classTexp?
+
     const ratorTE = typeofExp(app.rator, tenv);
     const randsTE = mapResult((rand) => typeofExp(rand, tenv), app.rands);
     const returnTE = T.makeFreshTVar();
@@ -319,16 +322,14 @@ export const typeofSet = (exp: A.SetExp, tenv: E.TEnv): Result<T.VoidTExp> => {
 export const typeofClass = (exp: A.ClassExp, tenv: E.TEnv): Result<T.TExp> => {
     const vars = R.map((v) => v.var, exp.fields);
     const texps = R.map((v) => v.texp, exp.fields);
-    const both = R.zip(vars,texps);
-
-    const meth_vars = R.map((b: A.Binding) => b.var.var, exp.methods);
-    const meth_types = R.map((b: A.Binding) => b.var.texp, exp.methods);
-    const newBoth = R.zip(meth_vars, meth_types);
-
-    const newTenv = E.makeExtendTEnv(vars, texps, tenv);
-    const bindingTVars = R.map((b: A.Binding) => b.var.texp, exp.methods);
-    const cexpMethods = mapResult((b: A.Binding) => typeofExp(b.val, newTenv), exp.methods);
-    const constraint = bind(cexpMethods, (types: T.TExp[]) => zipWithResultCET(checkEqualType, types, bindingTVars, exp));
-    return bind(constraint, _ => makeOk(T.makeProcTExp(texps, T.makeClassTExp(exp.typeName.var, newBoth))));
-    //return bind(constraint, _ => makeOk(T.makeClassTExp(exp.typeName.var, newBoth)));
+    const classTenv = E.makeExtendTEnv(vars, texps, tenv);      // classTenv holds the types of the fields too.
+    const bindingValsTVars = R.map((b: A.Binding) => b.var.texp, exp.methods);
+    const MethodTExps = mapResult((b: A.Binding) => typeofExp(b.val, classTenv), exp.methods);
+    const constraint = bind(MethodTExps, (types: T.TExp[]) => zipWithResultCET(checkEqualType, types, bindingValsTVars, exp));
+    return bind(constraint, _ => makeOk(T.makeProcTExp(texps, exp.typeName)));
 };
+
+
+
+
+
