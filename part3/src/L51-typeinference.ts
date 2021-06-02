@@ -66,9 +66,8 @@ const checkClassProcEqualTypes = (ct: T.ClassTExp, pt: T.ProcTExp, exp: A.Exp): 
     console.log("pt.paramTEs.length: " + pt.paramTEs.length);
     console.log("T.isSymbolTExp(pt.paramTEs[0] " + T.isSymbolTExp(pt.paramTEs[0]));
     if(T.isSymbolTExp(pt.paramTEs[0])){
-        console.log("pt.paramTEs[0].val: " + pt.paramTEs[0].val);
+        console.log("pt.paramTEs[0].val: " + pt.paramTEs[0].val?.val);
     }
-
 
     if ((pt.paramTEs.length != 1) || (! T.isSymbolTExp(pt.paramTEs[0])) || (! pt.paramTEs[0].val))
         return makeFailure<true>('A class can only match a proc of 1 ground symbol param');
@@ -215,20 +214,23 @@ export const typeofProc = (proc: A.ProcExp, tenv: E.TEnv): Result<T.TExp> => {
 export const typeofApp = (app: A.AppExp, tenv: E.TEnv): Result<T.TExp> => {
     if(A.isClassExp(app.rator)){
         if(app.rands.length != 1){
-            return makeFailure("A class can only match a proc of 1 ground symbol param");
-        }else{
+            return makeFailure("symbol number is invalid");
+        }else{                                          //lit -> sym -> val == string
             const cls = app.rator;
-            const method = app.rands[0];
-            if(!A.isLitExp(method)){ return makeFailure("A class can only match a proc of 1 ground symbol param"); }
-            const constraintClass = bind(typeofLit(method), (littexp: T.TExp) => T.isSymbolTExp(littexp) && littexp ? 
-            bind(E.applyTEnv(tenv, cls.typeName.var), (texp: T.TExp) => T.isClassTExp(texp) ? T.classTExpMethodTExp(texp, littexp.val)) : );
+            if(!A.isLitExp(app.rands[0])){ return makeFailure("A class can only match a proc of 1 ground symbol param - in typeOfApp"); }
+            console.log("Symbol - TypeOfApp: " + app.rands[0].val);
+            return bind(typeofLit(app.rands[0]), (littexp: T.TExp) => T.isSymbolTExp(littexp) ? 
+            bind(E.applyTEnv(tenv, cls.typeName.var), (classTexp: T.TExp) => T.isClassTExp(classTexp)
+             && typeof littexp.val !== 'undefined'  ? T.classTExpMethodTExp(classTexp, littexp.val.val) : 
+            makeFailure("symbol type is undefined or type of class could not found")) :  makeFailure("lit type exp is not a symbol"));
         }
+    }else{
+        const ratorTE = typeofExp(app.rator, tenv);
+        const randsTE = mapResult((rand) => typeofExp(rand, tenv), app.rands);
+        const returnTE = T.makeFreshTVar();
+        const constraint = safe2((ratorTE: T.TExp, randsTE: T.TExp[]) => checkEqualType(ratorTE, T.makeProcTExp(randsTE, returnTE), app))(ratorTE, randsTE);
+        return bind(constraint, _ => makeOk(returnTE));
     }
-    const ratorTE = typeofExp(app.rator, tenv);
-    const randsTE = mapResult((rand) => typeofExp(rand, tenv), app.rands);
-    const returnTE = T.makeFreshTVar();
-    const constraint = safe2((ratorTE: T.TExp, randsTE: T.TExp[]) => checkEqualType(ratorTE, T.makeProcTExp(randsTE, returnTE), app))(ratorTE, randsTE);
-    return bind(constraint, _ => makeOk(returnTE));
 };
 
 // Purpose: compute the type of a let-exp
