@@ -189,37 +189,39 @@ export const typeofProc = (proc: A.ProcExp, tenv: E.TEnv): Result<T.TExp> => {
 export const typeofApp = (app: A.AppExp, tenv: E.TEnv): Result<T.TExp> => {
 
     // Add here the case where the operator is of type classTexp?
-
-    // console.log(typeofExp(app.rator, tenv));     // This sheds allot of light on the computation.
-    if(A.isClassExp(app.rator)){
-        return makeOk(T.makeNumTExp());
-        //if(app.rands.length != 1){
-        //    return makeFailure("num of args is invalid");
-        //}else{                                          //lit -> sym -> val == string
-        //    const cls = app.rator;
-        //    if(!A.isLitExp(app.rands[0])){ return makeFailure("A class can only match a proc of 1 ground symbol param - in typeOfApp"); }
-        //    console.log("Symbol - TypeOfApp: " + app.rands[0].val);
-        //    return bind(typeofLit(app.rands[0]), (littexp: T.TExp) => T.isSymbolTExp(littexp) ? 
-        //        bind(E.applyTEnv(tenv, cls.typeName.var), (classTexp: T.TExp) => T.isClassTExp(classTexp)
-        //            && typeof littexp.val !== 'undefined'  ? T.classTExpMethodTExp(classTexp, littexp.val.val) : 
-        //                makeFailure("symbol type is undefined or type of class could not found")) :  
-        //                    makeFailure("lit type exp is not a symbol"));
-        //}
-    }else{
-        const ratorTE = typeofExp(app.rator, tenv);
-        const randsTE = mapResult((rand) => typeofExp(rand, tenv), app.rands);
-        const returnTE = T.makeFreshTVar();
-        const constraint = safe2((ratorTE: T.TExp, randsTE: T.TExp[]) => checkEqualType(ratorTE, T.makeProcTExp(randsTE, returnTE), app))(ratorTE, randsTE);
-        return bind(constraint, _ => makeOk(returnTE));
-    }
-
-    /*
     const ratorTE = typeofExp(app.rator, tenv);
     const randsTE = mapResult((rand) => typeofExp(rand, tenv), app.rands);
     const returnTE = T.makeFreshTVar();
     const constraint = safe2((ratorTE: T.TExp, randsTE: T.TExp[]) => checkEqualType(ratorTE, T.makeProcTExp(randsTE, returnTE), app))(ratorTE, randsTE);
     return bind(constraint, _ => makeOk(returnTE));
-    */
+
+
+
+    // console.log(typeofExp(app.rator, tenv));     // This sheds allot of light on the computation.
+//    if(A.isClassExp(app.rator)){
+//        //return makeOk(T.makeNumTExp());
+//        if(app.rands.length != 1){
+//            return makeFailure("num of args is invalid");
+//        }else{                                          //lit -> sym -> val == string
+//            const cls = app.rator;
+//            if(!A.isLitExp(app.rands[0])){ return makeFailure("A class can only match a proc of 1 ground symbol param - in typeOfApp"); }
+//            console.log("Symbol - TypeOfApp: " + app.rands[0].val);
+//            return bind(typeofLit(app.rands[0]), (littexp: T.TExp) => T.isSymbolTExp(littexp) ? 
+//                bind(E.applyTEnv(tenv, cls.typeName.var), (classTexp: T.TExp) => T.isClassTExp(classTexp)
+//                    && typeof littexp.val !== 'undefined'  ? T.classTExpMethodTExp(classTexp, littexp.val.val) : 
+//                        makeFailure("symbol type is undefined or type of class could not found")) :  
+//                            makeFailure("lit type exp is not a symbol"));
+//        }
+//    }else{
+//        const ratorTE = typeofExp(app.rator, tenv);
+//        const randsTE = mapResult((rand) => typeofExp(rand, tenv), app.rands);
+//        const returnTE = T.makeFreshTVar();
+//        const constraint = safe2((ratorTE: T.TExp, randsTE: T.TExp[]) => checkEqualType(ratorTE, T.makeProcTExp(randsTE, returnTE), app))(ratorTE, randsTE);
+//        return bind(constraint, _ => makeOk(returnTE));
+//    }
+
+    
+    
 };
 
 // Purpose: compute the type of a let-exp
@@ -289,11 +291,23 @@ export const typeofProgram = (exp: A.Program, tenv: E.TEnv): Result<T.TExp> =>
     isEmpty(exp.exps) ? makeFailure("Empty program") :
     typeofProgramExps(first(exp.exps), rest(exp.exps), tenv);
 
+
 const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> => 
     isEmpty(exps) ? typeofExp(exp, tenv) :
-    A.isDefineExp(exp) ? bind(typeofDefine(exp, E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv)),
-    _ => typeofProgramExps(first(exps), rest(exps), E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv))) :
+    
+    
+    A.isDefineExp(exp) ? (A.isClassExp(exp.val) ? bind(E.applyTEnv(tenv , exp.val.typeName.var), _ => 
+        bind(typeofExp(exp.val, tenv), (toc) => typeofProgramExps(first(exps), 
+            rest(exps), E.makeExtendTEnv([exp.var.var], [toc], tenv))) ) :
+                bind(typeofDefine(exp, E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv)),
+                    _ => typeofProgramExps(first(exps), rest(exps), E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv)))) :
     bind(typeofExp(exp, tenv), _ => typeofProgramExps(first(exps), rest(exps), tenv));
+
+    /*    
+    bind(typeofDefine(exp, E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv)),
+    _ => typeofProgramExps(first(exps), rest(exps), E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv)))) :
+    bind(typeofExp(exp, tenv), _ => typeofProgramExps(first(exps), rest(exps), tenv));
+    */
 
 // Purpose: compute the type of a literal expression
 //      - Only need to cover the case of Symbol and Pair
@@ -301,6 +315,7 @@ const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TE
 //        so that precise type checking can be made on ground symbol values.
 export const typeofLit = (exp: A.LitExp): Result<T.TExp> =>
     // Add some test for the input exp.
+    // Constraint on input (?).
     V.isSymbolSExp(exp.val) ? makeOk(T.makeSymbolTExp(exp.val)) :
     makeOk(T.makePairTExp());
 

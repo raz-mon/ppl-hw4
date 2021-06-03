@@ -1,3 +1,33 @@
+import {inferTypeOf} from "../src/L51-typeinference"
+
+
+
+console.log(inferTypeOf("(L5 (define x (lambda (y: T) (+ y 2)) x))"))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 import { expect } from "chai";
@@ -15,7 +45,7 @@ import { isSymbolTExp, isPairTExp } from "../src/TExp51";
 
 
 //p("(letrec ((e (lambda (x) x))) (e 2))")
-console.log("raz");
+//console.log("raz");
 
 
 //console.log(p("(class (a) ((first (lambda () : number a))))"))
