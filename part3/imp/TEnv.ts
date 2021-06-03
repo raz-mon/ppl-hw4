@@ -14,6 +14,9 @@
 
 import { TExp } from '../src/TExp51';
 import { Result, makeOk, makeFailure } from '../shared/result';
+import { createNoSubstitutionTemplateLiteral } from 'typescript';
+import { makeTEnvFromClasses } from '../src/L51-typeinference';
+
 
 export type TEnv = EmptyTEnv | ExtendTEnv;
 
@@ -26,10 +29,24 @@ export const makeExtendTEnv = (vars: string[], texps: TExp[], tenv: TEnv): Exten
     ({tag: "ExtendTEnv", vars: vars, texps: texps, tenv: tenv});
 export const isExtendTEnv = (x: any): x is ExtendTEnv => x.tag === "ExtendTEnv";
 
+export const applyTEnv = (tenv: TEnv, v: string): Result<TExp> => {
+    if (isEmptyTEnv(tenv)){
+        //console.log("%j", tenv);
+        
+        //console.log(`tenv = ${tenv}`);
+        return makeFailure(`Type Variable not found ${v}`);
+    }
+    else{
+        return applyExtendTEnv(tenv.texps, tenv.tenv, v, tenv.vars.indexOf(v));    
+    }
+}
+    
+// This is the original function. The other is for out own testing puproses.
+/*
 export const applyTEnv = (tenv: TEnv, v: string): Result<TExp> =>
     isEmptyTEnv(tenv) ? makeFailure(`Type Variable not found ${v}`) :
     applyExtendTEnv(tenv.texps, tenv.tenv, v, tenv.vars.indexOf(v));
-
+*/
 export const applyExtendTEnv = (texps: TExp[], tenv: TEnv, v: string, pos: number): Result<TExp> =>
     (pos === -1) ? applyTEnv(tenv, v) :
     makeOk(texps[pos]);

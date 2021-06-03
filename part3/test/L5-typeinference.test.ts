@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { inferTypeOf, typeofExp } from "../src/L51-typeinference";
+import { inferTypeOf, typeofExp, makeTEnvFromClasses } from "../src/L51-typeinference";
 import { parse, parseL5Exp, Exp, parsedToClassExps, Parsed, ClassExp } from "../src/L51-ast";
 import { makeExtendTEnv, makeEmptyTEnv } from "../imp/TEnv";
 import { makeNumTExp } from "../src/TExp51";
@@ -213,7 +213,7 @@ describe('L5 Type Inference', () => {
         it('infers the type of class', () => {
 
 
-                  // This is added just to check that indeed the classes in the program are traversed and gathered by parsedToClassExps.
+            /*      // This is added just to check that indeed the classes in the program are traversed and gathered by parsedToClassExps.
             bind(parse("(L5 (define pair (class : pair ((f : T) (r : T)) ((first (lambda () f)) (rest (lambda () r))))))"),(parsed: Parsed) => 
             {
                 console.log(parsedToClassExps(parsed));
@@ -221,12 +221,17 @@ describe('L5 Type Inference', () => {
             })
 
             //    bind(parsedToClassExps(parsed), (ce: ClassExp[]) => console.log(ce)));    
-            
+            */
 
 
             expect(verifyTeOfExprWithInference("(class : c1 ((field1 : number)) ((get (lambda () : number field1))))", 
                                                "(number -> (class c1 (get : (Empty -> number))))")).to.deep.equal(makeOk(true));
         });
+
+
+
+
+
 
         it('infers the type of a class constructor', () => {
             const program1 = 
@@ -234,21 +239,9 @@ describe('L5 Type Inference', () => {
                                 ((f : T) 
                                  (r : T))
                                 ((first (lambda () f)) 
-                                 (rest (lambda () r)))))            // --> pair is a 'class-constructor' (type-name = pair)
+                                 (rest (lambda () r)))))
                  (pair 1 2)
                  pair)`;
-
-                /*
-                //added. Just to see that the parsing is correct.
-                console.log(JSON.stringify(inferTypeOf(`(L5 (define pair (class : pair 
-                    ((f : T) 
-                     (r : T))
-                    ((first (lambda () f)) 
-                     (rest (lambda () r)))))
-                        (pair 1 2)
-                        pair)`)));
-                */
-               
             expect(verifyTeOfExprWithInference(program1, `(number * number -> (class pair (first : (Empty -> number)) (rest : (Empty -> number))))`)).to.deep.equal(makeOk(true));
 
             const program2 = 
@@ -262,6 +255,33 @@ describe('L5 Type Inference', () => {
                  pair)`;
             expect(verifyTeOfExprWithInference(program2, `(number * number -> (class pair (first : (Empty -> number)) (rest : (Empty -> number)) (scale : (number -> pair))))`)).to.deep.equal(makeOk(true));
         });
+
+
+            /*
+            bind(parse("(L5 (define pair (class : pair ((f : T) (r : T)) ((first (lambda () f)) (rest (lambda () r))))) (pair 1 2) pair)"), 
+                (parsed: Parsed) => {
+                    console.log("%j", makeTEnvFromClasses(parsed))
+                    return makeOk("raz");
+                }  );
+            */
+
+                /*
+                //added. Just to see that the parsing is correct.
+                console.log(JSON.stringify(inferTypeOf(`(L5 (define pair (class : pair 
+                    ((f : T) 
+                     (r : T))
+                    ((first (lambda () f)) 
+                     (rest (lambda () r)))))
+                        (pair 1 2)
+                        pair)`)));
+                */
+
+
+
+
+
+
+
 
         it('infers the type of a class with typed class define', () => {
             const program1 = 

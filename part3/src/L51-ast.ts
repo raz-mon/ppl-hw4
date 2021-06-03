@@ -353,6 +353,8 @@ const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Resu
         return makeFailure('Problem with fiedls. Should look like: f_name [: TVar?]');    
     }
     */
+   
+   // Could have just used 'parseBindings!!!!
     const Sexp2Binding = (bindSExp: Sexp): Result<Binding> => {
         if (!isArray(bindSExp))
             return makeFailure(`${bindSExp} is not an array`)
@@ -382,6 +384,10 @@ const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Resu
         const VarDeclArr: Result<VarDecl[]> = mapResult((svd: Sexp) => parseVarDecl(svd), varDecls);
         if(isArray(bindings)){
             const BindingsArr: Result<Binding[]> = mapResult((bindSexp: Sexp) => Sexp2Binding(bindSexp), bindings);
+
+            //const bindingsAsArray: [Sexp, Sexp][] = bindings.map((b: Binding) => [b[0], b[1]]);
+            //const BindigsArr: Result<Binding[]> = parseBindings(bindingsAsArray);
+
             return bind(VarDeclArr, (vda) => bind(BindingsArr, (bda) => makeOk(makeClassExp(type_Name, vda, bda))));
         }
     }
