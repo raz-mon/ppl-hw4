@@ -6,9 +6,9 @@ import * as TC from "./L51-typecheck";
 import * as V from "../imp/L5-value";
 import * as E from "../imp/TEnv";
 import * as T from "./TExp51";
-import { allT, first, rest, isEmpty } from "../shared/list";
+import { allT, first, rest, isEmpty, cons } from "../shared/list";
 import { isNumber, isString } from '../shared/type-predicates';
-import { Result, makeFailure, makeOk, bind, safe2, zipWithResult, mapResult, zipWithResultCET } from "../shared/result";
+import { Result, makeFailure, makeOk, bind, safe2, zipWithResult, mapResult } from "../shared/result";
 
 // Purpose: Make type expressions equivalent by deriving a unifier
 // Return an error if the types are not unifiable.
@@ -321,7 +321,6 @@ const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TE
 //      - for a symbol - record the value of the symbol in the SymbolTExp
 //        so that precise type checking can be made on ground symbol values.
 export const typeofLit = (exp: A.LitExp): Result<T.TExp> =>
-    // Add some test for the input exp.
     V.isSymbolSExp(exp.val) ? makeOk(T.makeSymbolTExp(exp.val)) :
     makeOk(T.makePairTExp());
 
@@ -337,7 +336,7 @@ export const typeofSet = (exp: A.SetExp, tenv: E.TEnv): Result<T.VoidTExp> => {
     const valTE = typeofExp(exp.val, tenv);
     const constraint1 = safe2((tenvTE: T.TExp, varTE: T.TExp) => checkEqualType(tenvTE, varTE, exp))(tenvTE, varTE);
     const constraint2 = safe2((varTE: T.TExp, valTE: T.TExp) => checkEqualType(varTE, valTE, exp))(varTE, valTE);
-    const totalConst = safe2((bool1: boolean, bool2: boolean) => makeOk(true))(constraint1,constraint2);
+    const totalConst = safe2((bool1: true, bool2: true) => makeOk(true))(constraint1,constraint2);
     return bind(totalConst, _ => makeOk(T.makeVoidTExp()));
 };
 
@@ -349,7 +348,34 @@ export const typeofSet = (exp: A.SetExp, tenv: E.TEnv): Result<T.VoidTExp> => {
 //      type<method_k>(class-tenv) = mk
 // Then type<class(type fields methods)>(tenv) = [t1 * ... * tn -> type]
 
+export const zipWithResultCET = <T1, T2, T3, T4>(f: (x: T1, y: T2, z: T3) => Result<T4>, xs: T1[], ys: T2[], zs: T3): Result<T4[]> =>
+    xs.length === 0 || ys.length === 0 ? makeOk([]) :
+    bind(f(first(xs), first(ys), zs),
+        (fxy: T4) => bind(zipWithResultCET(f, rest(xs), rest(ys), zs),
+                            (fxys: T4[]) => makeOk(cons(fxy, fxys))));
+
 export const typeofClass = (exp: A.ClassExp, tenv: E.TEnv): Result<T.TExp> => {
+    // Check that the procExps are of the type proc.returnTE under the Tenv extended with the fiels and their 
+    // relevant texps. If this is indeed the situation, we return [t1 * ... * tn -> typename].
+    // Notice that the 'if' above should use 'checkEqualType', and in this manner it exploits the system's 
+    // action of type-inference. (It really has to... otherwise the inference-system will not infer correctly).
+
+    const fieldVars = R.map((v) => v.var, exp.fields);
+    const fieldsTexps = R.map((v) => v.texp, exp.fields);
+    const newTenv = E.makeExtendTEnv(fieldVars, fieldsTexps, tenv);
+
+    const MethodsTypes_env = mapResult((b: A.Binding) => typeofExp(b.val, newTenv), exp.methods);
+    const meth_types_exp = R.map((b: A.Binding) => b.var.texp, exp.methods);
+    const meth_vars = R.map((b: A.Binding) => b.var.var, exp.methods);
+    const meth_types = R.map((b: A.Binding) => b.var.texp, exp.methods);
+    const newBoth = R.zip(meth_vars, meth_types);
+    const constraint1 = bind(MethodsTypes_env, (types: T.TExp[]) => 
+        zipWithResultCET(checkEqualType, types, meth_types_exp, exp));
+    return bind(constraint1, _ => makeOk(T.makeProcTExp(fieldsTexps, T.makeClassTExp(exp.typeName.var, newBoth))))
+};
+
+
+/* Latest version.
     const vars = R.map((v) => v.var, exp.fields);
     const texps = R.map((v) => v.texp, exp.fields);
 
@@ -367,7 +393,11 @@ export const typeofClass = (exp: A.ClassExp, tenv: E.TEnv): Result<T.TExp> => {
     const totalConst = safe2((bool1: boolean[], bool2: any) => makeOk(true))(constraint1,constraint2);
     return bind(totalConst, _ => makeOk(T.makeProcTExp(texps, T.makeClassTExp(exp.typeName.var, newBoth))));
     //return bind(totalConst, _ => makeOk(T.makeProcTExp(texps, exp.typeName)));
-};
+*/
+
+
+
+
 
 
 
