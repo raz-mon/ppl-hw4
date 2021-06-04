@@ -371,9 +371,24 @@ export const typeofClass = (exp: A.ClassExp, tenv: E.TEnv): Result<T.TExp> => {
     const newBoth = R.zip(meth_vars, meth_types);
     const constraint1 = bind(MethodsTypes_env, (types: T.TExp[]) => 
         zipWithResultCET(checkEqualType, types, meth_types_exp, exp));
-    return bind(constraint1, _ => makeOk(T.makeProcTExp(fieldsTexps, T.makeClassTExp(exp.typeName.var, newBoth))))
+
+    const typeofVar = findClassTExpIfExists(exp.typeName.var, tenv);
+
+    //console.log(typeOfVar);
+    //console.log("%j", tenv);
+    const constraint2 = bind(typeofVar, (tov: T.TExp) => T.isClassTExp(tov) ? makeOk(tov) : makeFailure("type not recognized!!"));
+    
+    const totalConst = safe2((bool1: boolean[], bool2: any) => makeOk(true))(constraint1,constraint2);
+    return bind(totalConst, _ => makeOk(T.makeProcTExp(fieldsTexps, T.makeClassTExp(exp.typeName.var, newBoth))));
+    //return bind(constraint1, _ => makeOk(T.makeProcTExp(fieldsTexps, T.makeClassTExp(exp.typeName.var, newBoth))))
 };
 
+const findClassTExpIfExists = (typeNamestr: string, tenv: E.TEnv): Result<T.TExp> => {
+    if (!E.isExtendTEnv(tenv))
+        return makeFailure("type not found!!");
+    const typeofVar = E.applyTEnv(tenv, typeNamestr);
+    return bind(typeofVar, (tov: T.TExp) => T.isClassTExp(tov) ? makeOk(tov) : findClassTExpIfExists(typeNamestr, tenv.tenv));
+}
 
 /* Latest version.
     const vars = R.map((v) => v.var, exp.fields);
