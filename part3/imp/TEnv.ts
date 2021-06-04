@@ -41,7 +41,7 @@ export const applyTEnv = (tenv: TEnv, v: string): Result<TExp> => {
     }
 }
     
-// This is the original function. The other is for out own testing puproses.
+// This is the original function. The other is for our own testing puproses.
 /*
 export const applyTEnv = (tenv: TEnv, v: string): Result<TExp> =>
     isEmptyTEnv(tenv) ? makeFailure(`Type Variable not found ${v}`) :

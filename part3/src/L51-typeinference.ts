@@ -286,6 +286,10 @@ export const typeofDefine = (exp: A.DefineExp, tenv: E.TEnv): Result<T.VoidTExp>
 // Purpose: compute the type of a program
 // Typing rule:
 //   (L5 <exp>+)
+// If   type<exp_1>(tenv) = u1
+//      ...
+//      type<exp_n>(tenv) = uk
+// Then type<program>(tenv) = uk
 export const typeofProgram = (exp: A.Program, tenv: E.TEnv): Result<T.TExp> =>
     // similar to typeofExps but threads variables into tenv after define-exps
     isEmpty(exp.exps) ? makeFailure("Empty program") :
@@ -294,20 +298,23 @@ export const typeofProgram = (exp: A.Program, tenv: E.TEnv): Result<T.TExp> =>
 
 const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> => 
     isEmpty(exps) ? typeofExp(exp, tenv) :
+    A.isDefineExp(exp) ? bind(typeofDefine(exp, E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv)),
+    _ => typeofProgramExps(first(exps), rest(exps), E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv))) :
+    bind(typeofExp(exp, tenv), _ => typeofProgramExps(first(exps), rest(exps), tenv));
     
-    
+    // This is the implementation that treats the exp.val - class as a separate case. Don't think it's correct. The generic one should do.
+    /*
     A.isDefineExp(exp) ? (A.isClassExp(exp.val) ? bind(E.applyTEnv(tenv , exp.val.typeName.var), _ => 
         bind(typeofExp(exp.val, tenv), (toc) => typeofProgramExps(first(exps), 
-            rest(exps), E.makeExtendTEnv([exp.var.var], [toc], tenv))) ) :
+            rest(exps), E.makeExtendTEnv([exp.var.var], [toc], tenv)))) :
                 bind(typeofDefine(exp, E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv)),
-                    _ => typeofProgramExps(first(exps), rest(exps), E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv)))) :
-    bind(typeofExp(exp, tenv), _ => typeofProgramExps(first(exps), rest(exps), tenv));
-
-    /*    
-    bind(typeofDefine(exp, E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv)),
-    _ => typeofProgramExps(first(exps), rest(exps), E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv)))) :
+                    _ => typeofProgramExps(first(exps), rest(exps), 
+                        E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv)))) :
     bind(typeofExp(exp, tenv), _ => typeofProgramExps(first(exps), rest(exps), tenv));
     */
+        
+    
+    
 
 // Purpose: compute the type of a literal expression
 //      - Only need to cover the case of Symbol and Pair
@@ -315,7 +322,6 @@ const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TE
 //        so that precise type checking can be made on ground symbol values.
 export const typeofLit = (exp: A.LitExp): Result<T.TExp> =>
     // Add some test for the input exp.
-    // Constraint on input (?).
     V.isSymbolSExp(exp.val) ? makeOk(T.makeSymbolTExp(exp.val)) :
     makeOk(T.makePairTExp());
 
