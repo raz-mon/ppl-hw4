@@ -314,9 +314,6 @@ const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TE
     bind(typeofExp(exp, tenv), _ => typeofProgramExps(first(exps), rest(exps), tenv));
     */
         
-    
-    
-
 // Purpose: compute the type of a literal expression
 //      - Only need to cover the case of Symbol and Pair
 //      - for a symbol - record the value of the symbol in the SymbolTExp
@@ -371,11 +368,10 @@ export const typeofClass = (exp: A.ClassExp, tenv: E.TEnv): Result<T.TExp> => {
     const constraint1 = bind(MethodsTypes_env, (types: T.TExp[]) => 
         zipWithResultCET(checkEqualType, types, meth_types_exp, exp));
 
-    const typeofVar = findClassTExpIfExists(exp.typeName.var, tenv);
-
     //console.log(typeOfVar);
     //console.log("%j", tenv);
-    
+        
+    const typeofVar = findClassTExpIfExists(exp.typeName.var, tenv);
     // constraint2 - Check that this type actually exists by checking the tenv for this typeName. 
     // Isn't this circular (meaning we gathered all types from the classExps, so obviously this type will be in the tenv somewhere...).
     const constraint2 = bind(typeofVar, (tov: T.TExp) => T.isClassTExp(tov) ? makeOk(tov) : makeFailure("type not recognized!!"));

@@ -1,51 +1,36 @@
-import {inferTypeOf} from "../src/L51-typeinference"
 
-
-
-console.log(inferTypeOf("(L5 (define x (lambda (y: T) (+ y 2)) x))"))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+import * as R from "ramda";
+import * as A from "./L51-ast";
+import * as TC from "./L51-typecheck";
+import * as V from "../imp/L5-value";
+import * as E from "../imp/TEnv";
+import * as T from "./TExp51";
+import { allT, first, rest, isEmpty, cons } from "../shared/list";
+import { isNumber, isString } from '../shared/type-predicates';
+import { Result, makeFailure, makeOk, bind, safe2, zipWithResult, mapResult } from "../shared/result";
+import * as TI from "./L51-typeinference"
 
 /*
-import { expect } from "chai";
-import { isNumExp, isBoolExp, isVarRef, isPrimOp, isProgram, isDefineExp, isVarDecl,
-         isAppExp, isStrExp, isIfExp, isProcExp, isLetExp, isLitExp, isLetrecExp, isSetExp, 
-         isClassExp, parseL5Exp, unparse, Exp, parseL5 } from "../src/L51-ast";
-import { Result, bind, isOkT, makeOk } from "../shared/result";
-import { parse as parseSexp } from "../shared/parser";
-import { isSymbolSExp, makeSymbolSExp } from "../imp/L5-value";
-import { isSymbolTExp, isPairTExp } from "../src/TExp51";
+(define pair
+    (class : Tpair
+    ((a : number)
+    (b : number))
+    ((first (lambda () : number a))
+    (second (lambda () : number b))
+    (scale (lambda (k) : pair (pair (* k a) (* k b))))
+    (sum (lambda () : number (+ a b))))))
+    (define (p34 : Tpair) (pair 3 4))
+    (define f
+    (lambda ((x : Tpair))
+    (* ((x 'first)) ((x 'second)))))
+    (p34 'first) ; --> #<procedure>
+    ((p34 'first)) ; --> 3
+    ((p34 'sum)) ; --> 7
+    ((p34 'scale) 2) ; --> #pair<6,8>
+    (f p34) ; --> 12
 */
 
-//const p = (x: string): Result<Exp> => bind(parseSexp(x), parseL5Exp);
+TI.inferTypeOf("(define pair (class : Tpair ((a : number) (b : number)) ((first (lambda () : number a)) (second (lambda () : number b)) (scale (lambda (k) : pair (pair (* k a) (* k b)))) (sum (lambda () : number (+ a b))))))")
 
 
-
-//p("(letrec ((e (lambda (x) x))) (e 2))")
-//console.log("raz");
-
-
-//console.log(p("(class (a) ((first (lambda () : number a))))"))
+console.log(TI.inferTypeOf("(define pair (class : Tpair ((a : number) (b : number)) ((first (lambda () : number a)) (second (lambda () : number b)) (scale (lambda (k) : pair (pair (* k a) (* k b)))) (sum (lambda () : number (+ a b))))))"))
