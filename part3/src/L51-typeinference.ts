@@ -195,7 +195,8 @@ export const typeofApp = (app: A.AppExp, tenv: E.TEnv): Result<T.TExp> => {
     const constraint = safe2((ratorTE: T.TExp, randsTE: T.TExp[]) => checkEqualType(ratorTE, T.makeProcTExp(randsTE, returnTE), app))(ratorTE, randsTE);
     return bind(constraint, _ => makeOk(returnTE));
 
-
+// returnTE needs to be a procedure matching the method in the class that has the same method name as the operand (symbol) here.
+// (pair 3 4). 'pair' is a class-constructor.
 
     // console.log(typeofExp(app.rator, tenv));     // This sheds allot of light on the computation.
 //    if(A.isClassExp(app.rator)){
@@ -355,20 +356,18 @@ export const zipWithResultCET = <T1, T2, T3, T4>(f: (x: T1, y: T2, z: T3) => Res
                             (fxys: T4[]) => makeOk(cons(fxy, fxys))));
 
 export const typeofClass = (exp: A.ClassExp, tenv: E.TEnv): Result<T.TExp> => {
-    // Check that the procExps are of the type proc.returnTE under the Tenv extended with the fiels and their 
-    // relevant texps. If this is indeed the situation, we return [t1 * ... * tn -> typename].
-    // Notice that the 'if' above should use 'checkEqualType', and in this manner it exploits the system's 
-    // action of type-inference. (It really has to... otherwise the inference-system will not infer correctly).
 
     const fieldVars = R.map((v) => v.var, exp.fields);
     const fieldsTexps = R.map((v) => v.texp, exp.fields);
     const newTenv = E.makeExtendTEnv(fieldVars, fieldsTexps, tenv);
 
+    // Get the type of the procedures, where the type-environment is extended with the types of the fields.
     const MethodsTypes_env = mapResult((b: A.Binding) => typeofExp(b.val, newTenv), exp.methods);
     const meth_types_exp = R.map((b: A.Binding) => b.var.texp, exp.methods);
     const meth_vars = R.map((b: A.Binding) => b.var.var, exp.methods);
     const meth_types = R.map((b: A.Binding) => b.var.texp, exp.methods);
     const newBoth = R.zip(meth_vars, meth_types);
+    // constraint1 - Check that the types declared are compatible with the types of the procedures.
     const constraint1 = bind(MethodsTypes_env, (types: T.TExp[]) => 
         zipWithResultCET(checkEqualType, types, meth_types_exp, exp));
 
@@ -376,11 +375,14 @@ export const typeofClass = (exp: A.ClassExp, tenv: E.TEnv): Result<T.TExp> => {
 
     //console.log(typeOfVar);
     //console.log("%j", tenv);
+    
+    // constraint2 - Check that this type actually exists by checking the tenv for this typeName. 
+    // Isn't this circular (meaning we gathered all types from the classExps, so obviously this type will be in the tenv somewhere...).
     const constraint2 = bind(typeofVar, (tov: T.TExp) => T.isClassTExp(tov) ? makeOk(tov) : makeFailure("type not recognized!!"));
     
     const totalConst = safe2((bool1: boolean[], bool2: any) => makeOk(true))(constraint1,constraint2);
     return bind(totalConst, _ => makeOk(T.makeProcTExp(fieldsTexps, T.makeClassTExp(exp.typeName.var, newBoth))));
-    //return bind(constraint1, _ => makeOk(T.makeProcTExp(fieldsTexps, T.makeClassTExp(exp.typeName.var, newBoth))))
+    //return bind(constraint1, _ => makeOk(T.makeProcTExp(fieldsTexps, T.makeClassTExp(exp.typeName.var, newBoth))));
 };
 
 const findClassTExpIfExists = (typeNamestr: string, tenv: E.TEnv): Result<T.TExp> => {
