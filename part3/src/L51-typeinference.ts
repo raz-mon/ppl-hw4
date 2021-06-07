@@ -370,7 +370,7 @@ export const typeofClass = (exp: A.ClassExp, tenv: E.TEnv): Result<T.TExp> => {
 
     //console.log(typeOfVar);
     //console.log("%j", tenv);
-        
+    
     const typeofVar = findClassTExpIfExists(exp.typeName.var, tenv);
     // constraint2 - Check that this type actually exists by checking the tenv for this typeName. 
     // Isn't this circular (meaning we gathered all types from the classExps, so obviously this type will be in the tenv somewhere...).

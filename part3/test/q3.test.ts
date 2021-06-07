@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { Exp, Program, unparse, parseL5, parseL5Exp } from '../src/L51-ast';
 import { makeOk, bind, isFailure } from '../shared/result';
 import { parse as p } from "../shared/parser";
-/*
+
 describe('Q5 Tests', () => {
      it('test parse/unparse pair class', () => {
           expect(
@@ -45,4 +45,4 @@ describe('Q5 Tests', () => {
 
 
 });
-*/
+
