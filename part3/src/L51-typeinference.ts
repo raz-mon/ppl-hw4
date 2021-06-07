@@ -193,36 +193,7 @@ export const typeofApp = (app: A.AppExp, tenv: E.TEnv): Result<T.TExp> => {
     const randsTE = mapResult((rand) => typeofExp(rand, tenv), app.rands);
     const returnTE = T.makeFreshTVar();
     const constraint = safe2((ratorTE: T.TExp, randsTE: T.TExp[]) => checkEqualType(ratorTE, T.makeProcTExp(randsTE, returnTE), app))(ratorTE, randsTE);
-    return bind(constraint, _ => makeOk(returnTE));
-
-// returnTE needs to be a procedure matching the method in the class that has the same method name as the operand (symbol) here.
-// (pair 3 4). 'pair' is a class-constructor.
-
-    // console.log(typeofExp(app.rator, tenv));     // This sheds allot of light on the computation.
-//    if(A.isClassExp(app.rator)){
-//        //return makeOk(T.makeNumTExp());
-//        if(app.rands.length != 1){
-//            return makeFailure("num of args is invalid");
-//        }else{                                          //lit -> sym -> val == string
-//            const cls = app.rator;
-//            if(!A.isLitExp(app.rands[0])){ return makeFailure("A class can only match a proc of 1 ground symbol param - in typeOfApp"); }
-//            console.log("Symbol - TypeOfApp: " + app.rands[0].val);
-//            return bind(typeofLit(app.rands[0]), (littexp: T.TExp) => T.isSymbolTExp(littexp) ? 
-//                bind(E.applyTEnv(tenv, cls.typeName.var), (classTexp: T.TExp) => T.isClassTExp(classTexp)
-//                    && typeof littexp.val !== 'undefined'  ? T.classTExpMethodTExp(classTexp, littexp.val.val) : 
-//                        makeFailure("symbol type is undefined or type of class could not found")) :  
-//                            makeFailure("lit type exp is not a symbol"));
-//        }
-//    }else{
-//        const ratorTE = typeofExp(app.rator, tenv);
-//        const randsTE = mapResult((rand) => typeofExp(rand, tenv), app.rands);
-//        const returnTE = T.makeFreshTVar();
-//        const constraint = safe2((ratorTE: T.TExp, randsTE: T.TExp[]) => checkEqualType(ratorTE, T.makeProcTExp(randsTE, returnTE), app))(ratorTE, randsTE);
-//        return bind(constraint, _ => makeOk(returnTE));
-//    }
-
-    
-    
+    return bind(constraint, _ => makeOk(returnTE));    
 };
 
 // Purpose: compute the type of a let-exp
@@ -302,17 +273,6 @@ const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TE
     A.isDefineExp(exp) ? bind(typeofDefine(exp, E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv)),
     _ => typeofProgramExps(first(exps), rest(exps), E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv))) :
     bind(typeofExp(exp, tenv), _ => typeofProgramExps(first(exps), rest(exps), tenv));
-    
-    // This is the implementation that treats the exp.val - class as a separate case. Don't think it's correct. The generic one should do.
-    /*
-    A.isDefineExp(exp) ? (A.isClassExp(exp.val) ? bind(E.applyTEnv(tenv , exp.val.typeName.var), _ => 
-        bind(typeofExp(exp.val, tenv), (toc) => typeofProgramExps(first(exps), 
-            rest(exps), E.makeExtendTEnv([exp.var.var], [toc], tenv)))) :
-                bind(typeofDefine(exp, E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv)),
-                    _ => typeofProgramExps(first(exps), rest(exps), 
-                        E.makeExtendTEnv([exp.var.var], [exp.var.texp], tenv)))) :
-    bind(typeofExp(exp, tenv), _ => typeofProgramExps(first(exps), rest(exps), tenv));
-    */
         
 // Purpose: compute the type of a literal expression
 //      - Only need to cover the case of Symbol and Pair
@@ -366,20 +326,12 @@ export const typeofClass = (exp: A.ClassExp, tenv: E.TEnv): Result<T.TExp> => {
     const newBoth = R.zip(meth_vars, meth_types);
     // constraint1 - Check that the types declared are compatible with the types of the procedures.
     const constraint1 = bind(MethodsTypes_env, (types: T.TExp[]) => 
-        zipWithResultCET(checkEqualType, types, meth_types_exp, exp));
-
-    //console.log(typeOfVar);
-    //console.log("%j", tenv);
-    
+        zipWithResultCET(checkEqualType, types, meth_types_exp, exp));    
     const typeofVar = findClassTExpIfExists(exp.typeName.var, tenv);
-    // constraint2 - Check that this type actually exists by checking the tenv for this typeName. 
-    // Isn't this circular (meaning we gathered all types from the classExps, so obviously this type will be in the tenv somewhere...).
     const constraint2 = bind(typeofVar, (tov: T.TExp) => T.isClassTExp(tov) ? makeOk(tov) : makeFailure("type not recognized!!"));
-    
     const totalConst = safe2((bool1: boolean[], bool2: any) => makeOk(true))(constraint1,constraint2);
     return bind(totalConst, _ => makeOk(T.makeProcTExp(fieldsTexps, T.makeClassTExp(exp.typeName.var, newBoth))));
-    //return bind(constraint1, _ => makeOk(T.makeProcTExp(fieldsTexps, T.makeClassTExp(exp.typeName.var, newBoth))));
-};
+    };
 
 const findClassTExpIfExists = (typeNamestr: string, tenv: E.TEnv): Result<T.TExp> => {
     if (!E.isExtendTEnv(tenv))
@@ -387,40 +339,3 @@ const findClassTExpIfExists = (typeNamestr: string, tenv: E.TEnv): Result<T.TExp
     const typeofVar = E.applyTEnv(tenv, typeNamestr);
     return bind(typeofVar, (tov: T.TExp) => T.isClassTExp(tov) ? makeOk(tov) : findClassTExpIfExists(typeNamestr, tenv.tenv));
 }
-
-/* Latest version.
-    const vars = R.map((v) => v.var, exp.fields);
-    const texps = R.map((v) => v.texp, exp.fields);
-
-    const meth_vars = R.map((b: A.Binding) => b.var.var, exp.methods);
-    const meth_types = R.map((b: A.Binding) => b.var.texp, exp.methods);
-    const newBoth = R.zip(meth_vars, meth_types);
-
-    const newTenv = E.makeExtendTEnv(vars, texps, tenv);
-    //const bindingTVars = R.map((b: A.Binding) => b.var.texp, exp.methods);
-    const cexpMethods = mapResult((b: A.Binding) => typeofExp(b.val, newTenv), exp.methods);
-    const constraint1 = bind(cexpMethods, (types: T.TExp[]) => zipWithResultCET(checkEqualType, types, meth_types, exp));
-    //console.log("Exp name in typeofclass: " + exp.typeName.var);
-    //const constraint2 = bind(E.applyTEnv(tenv, exp.typeName.var), (texp: T.TExp) => texp.tag == exp.typeName.var ? makeOk(true) : makeFailure(`Wrong type name - expected ${texp.tag} , actual ${exp.typeName.var}`));
-    const constraint2 = bind(E.applyTEnv(tenv, exp.typeName.var), (texp: T.TExp) => makeOk(true));  // The typeName exists in the Tenv.
-    const totalConst = safe2((bool1: boolean[], bool2: any) => makeOk(true))(constraint1,constraint2);
-    return bind(totalConst, _ => makeOk(T.makeProcTExp(texps, T.makeClassTExp(exp.typeName.var, newBoth))));
-    //return bind(totalConst, _ => makeOk(T.makeProcTExp(texps, exp.typeName)));
-*/
-
-
-
-
-
-
-
-    /*
-    const vars = R.map((v) => v.var, exp.fields);
-    const texps = R.map((v) => v.texp, exp.fields);
-    const classTenv = E.makeExtendTEnv(vars, texps, tenv);      // classTenv holds the types of the fields too.
-    const bindingValsTVars = R.map((b: A.Binding) => b.var.texp, exp.methods);
-    const MethodTExps = mapResult((b: A.Binding) => typeofExp(b.val, classTenv), exp.methods);
-    const constraint = bind(MethodTExps, (types: T.TExp[]) => zipWithResultCET(checkEqualType, types, bindingValsTVars, exp));
-    return bind(totalConst, _ => makeOk(T.makeProcTExp(texps, exp.typeName)));
-    */
-

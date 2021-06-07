@@ -223,9 +223,3 @@ const typeofProgramExps = (exp: Exp, exps: Exp[], tenv: TEnv): Result<TExp> =>
     isDefineExp(exp) ? bind(typeofDefine(exp, makeExtendTEnv([exp.var.var], [exp.var.texp], tenv)),
     _ => typeofProgramExps(first(exps), rest(exps), makeExtendTEnv([exp.var.var], [exp.var.texp], tenv))) :
     bind(typeofExp(exp, tenv), _ => typeofProgramExps(first(exps), rest(exps), tenv));
-
-
-    /*
-    // L1 like implementation:
-    typeofExps(exp.exps, tenv);
-    */

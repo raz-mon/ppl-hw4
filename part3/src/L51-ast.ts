@@ -342,19 +342,7 @@ const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Resu
     else if (isEmpty(bindings)){
         return makeFailure("no bindings. You need at least one method");
     }
-    /*
-    const Sexp2VarDecl = (svd: Sexp): Result<VarDecl> => {
-        if (!isArray(svd))
-        return makeFailure(`(${svd}) is not an array.`);
-        else if (svd.length === 3)
-        return makeOk(makeVarDecl(svd[0].toString(), makeTVar(svd[2].toString()))); 
-        else if(svd.length === 1)
-        return makeOk(makeVarDecl(svd[0].toString(), makeFreshTVar()));
-        return makeFailure('Problem with fiedls. Should look like: f_name [: TVar?]');    
-    }
-    */
-   
-   // Could have just used 'parseBindings!!!!
+    
     const Sexp2Binding = (bindSExp: Sexp): Result<Binding> => {
         if (!isArray(bindSExp))
             return makeFailure(`${bindSExp} is not an array`)
@@ -384,10 +372,6 @@ const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Resu
         const VarDeclArr: Result<VarDecl[]> = mapResult((svd: Sexp) => parseVarDecl(svd), varDecls);
         if(isArray(bindings)){
             const BindingsArr: Result<Binding[]> = mapResult((bindSexp: Sexp) => Sexp2Binding(bindSexp), bindings);
-
-            //const bindingsAsArray: [Sexp, Sexp][] = bindings.map((b: Binding) => [b[0], b[1]]);
-            //const BindigsArr: Result<Binding[]> = parseBindings(bindingsAsArray);
-
             return bind(VarDeclArr, (vda) => bind(BindingsArr, (bda) => makeOk(makeClassExp(type_Name, vda, bda))));
         }
     }
@@ -395,8 +379,6 @@ const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Resu
         return makeFailure('varDecls not in correct syntax, must be an array.');
     }
     return makeFailure(`bad classExp inserted`);
-    
-    // Check that the typename isn't a primitive one ?
 }
 
 // sexps has the shape (quote <sexp>)
@@ -510,9 +492,6 @@ const unparseClassExp = (ce: ClassExp, unparseWithTVars?: boolean): Result<strin
 // Collect class expressions in parsed AST so that they can be passed to the type inference module
 
 export const parsedToClassExps = (p: Parsed): ClassExp[] =>
-    // This will have to be an AST traversal that "collects" ClassExps.
-    // We will use this later in the type inference system, with the whole program as input.
-
     isNumExp(p) ? [] : 
     isStrExp(p) ? [] : 
     isBoolExp(p) ? [] : 
@@ -527,7 +506,6 @@ export const parsedToClassExps = (p: Parsed): ClassExp[] =>
     isLitExp(p) ? [] : 
     isSetExp(p) ? [] :
     isClassExp(p) ? [p] :
-    // DefineExp | Program
     isDefineExp(p) ? parseDefineToClassExps(p.val) :
     isProgram(p) ? parseProgramToClasses(p.exps) :
     p;
