@@ -5,14 +5,14 @@
 // L51 extends L5 with:
 // typed class construct
 
-import { concat, chain, join, map, zipWith } from "ramda";
+import { concat, chain, join, map, zipWith, filter } from "ramda";
 import { Sexp, Token } from 's-expression';
 import { isCompoundSExp, isEmptySExp, isSymbolSExp, makeCompoundSExp, makeEmptySExp, makeSymbolSExp, SExpValue, valueToString } from '../imp/L5-value';
 import { allT, first, rest, second, isEmpty } from '../shared/list';
 import { parse as p, isToken, isSexpString } from "../shared/parser";
 import { Result, bind, makeFailure, mapResult, makeOk, safe2, safe3 } from "../shared/result";
 import { isArray, isString, isNumericString, isIdentifier } from "../shared/type-predicates";
-import { isTVar, makeFreshTVar, makeTVar, parseTExp, unparseTExp, TVar, TExp } from './TExp51';
+import { isTVar, makeFreshTVar, makeTVar, parseTExp, unparseTExp,makeProcTExp, TVar, TExp, makeVoidTExp } from './TExp51';
 import { makeClassTExp, ClassTExp } from "./TExp51";
 
 /*
@@ -335,8 +335,51 @@ const parseClassExp = (params: Sexp[]): Result<ClassExp> =>
     (params.length != 4) || (params[0] != ':') ? makeFailure(`class must have shape (class [: <type>]? <fields> <methods>) - got ${params.length} params instead`) :
     parseGoodClassExp(params[1], params[2], params[3]);
 
-const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Result<ClassExp> =>
-    makeFailure("TODO parseGoodClassExp");
+const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Result<ClassExp> => {
+    if(isEmpty(varDecls)){
+        return makeFailure("no varDecls = no fields. You need at least one.");
+    }
+    else if (isEmpty(bindings)){
+        return makeFailure("no bindings. You need at least one method");
+    }
+    
+    const Sexp2Binding = (bindSExp: Sexp): Result<Binding> => {
+        if (!isArray(bindSExp))
+            return makeFailure(`${bindSExp} is not an array`)
+        else if (bindSExp.length === 2){
+            if (!isToken(bindSExp[0]))
+                return makeFailure(`the first argument of the binding must be a Token (string)`)
+            // parseProcExp that lies in bindSExp[1].
+            if (isArray(bindSExp[1]) && bindSExp[1][0] === 'lambda'){
+                const procSExp: Sexp = rest(bindSExp[1]);       // All the procExp without the 'lambda'.
+                const parsedProc: Result<ProcExp> = parseProcExp(first(procSExp), rest(procSExp));
+                // Gave a 'void' type for the varDecl. What should we put here??!@#
+                //const varD: Result<VarDecl> = makeOk(makeVarDecl(bindSExp[0].toString(), makeVoidTExp() ));
+                const varD: Result<VarDecl> = bind(parsedProc, (pp) => makeOk(makeVarDecl(bindSExp[0].toString(),
+                                makeProcTExp(  map((vd: VarDecl) => vd.texp, pp.args) , pp.returnTE) )));
+                return bind(parsedProc, (parsedProcVal) => bind(varD, (varDVal) => makeOk(makeBinding(varDVal, parsedProcVal))));
+                //return safe2<VarDecl, CExp, Binding>(makeOk(makeBinding))(varD, parsedProc);
+            }
+            else
+            return makeFailure(`second argument of the binding must be a lambda expression`);        
+        }
+        return makeFailure(`To many arguments in ${bindSExp}`);
+    }
+
+    const type_Name: TVar = makeTVar(typeName.toString());
+    
+    if (isArray(varDecls)){
+        const VarDeclArr: Result<VarDecl[]> = mapResult((svd: Sexp) => parseVarDecl(svd), varDecls);
+        if(isArray(bindings)){
+            const BindingsArr: Result<Binding[]> = mapResult((bindSexp: Sexp) => Sexp2Binding(bindSexp), bindings);
+            return bind(VarDeclArr, (vda) => bind(BindingsArr, (bda) => makeOk(makeClassExp(type_Name, vda, bda))));
+        }
+    }
+    else{
+        return makeFailure('varDecls not in correct syntax, must be an array.');
+    }
+    return makeFailure(`bad classExp inserted`);
+}
 
 // sexps has the shape (quote <sexp>)
 export const parseLitExp = (param: Sexp): Result<LitExp> =>
@@ -448,11 +491,55 @@ const unparseClassExp = (ce: ClassExp, unparseWithTVars?: boolean): Result<strin
 // L51: Collect named types in AST
 // Collect class expressions in parsed AST so that they can be passed to the type inference module
 
-export const parsedToClassExps = (p: Parsed): ClassExp[] => 
-    // TODO parsedToClassExps
-    [];
+export const parsedToClassExps = (p: Parsed): ClassExp[] =>
+    isNumExp(p) ? [] : 
+    isStrExp(p) ? [] : 
+    isBoolExp(p) ? [] : 
+    isPrimOp(p) ? [] : 
+    isVarRef(p) ? [] : 
+    // AppExp | IfExp | ProcExp | LetExp | LitExp | LetrecExp | SetExp
+    isAppExp(p) ? [] : 
+    isIfExp(p) ? [] : 
+    isLetExp(p) ? parseLetToClassExps(p.bindings) : 
+    isLetrecExp(p) ? parseLetrecToClassExps(p.bindings) : 
+    isProcExp(p) ? [] :             // We declare classes only as stand-alone expression or in defineExps or let\letrec
+    isLitExp(p) ? [] : 
+    isSetExp(p) ? [] :
+    isClassExp(p) ? [p] :
+    isDefineExp(p) ? parseDefineToClassExps(p.val) :
+    isProgram(p) ? parseProgramToClasses(p.exps) :
+    p;
 
-// L51 
+export const parseLetToClassExps = (bindings: Binding[]): ClassExp[] => {
+    return bindings.reduce((acc: ClassExp[], curr: Binding) => isClassExp(curr.val) ? acc.concat([curr.val]) : acc, []);
+}
+
+export const parseLetrecToClassExps = (bindings: Binding[]): ClassExp[] => {
+    return bindings.reduce((acc: ClassExp[], curr: Binding) => isClassExp(curr.val) ? acc.concat([curr.val]) : acc, []);
+}
+
+export const parseDefineToClassExps = (defVal: CExp): ClassExp[] => 
+    isClassExp(defVal) ? [defVal] : []
+
+export const parseProgramToClasses = (exps: Exp[]): ClassExp[] => 
+    exps.reduce((acc: ClassExp[], curr: Exp) => acc.concat(parsedToClassExps(curr)), []);
+
+
+    // L51 
 export const classExpToClassTExp = (ce: ClassExp): ClassTExp => 
     makeClassTExp(ce.typeName.var, map((binding: Binding) => [binding.var.var, binding.var.texp], ce.methods));
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -57,6 +57,12 @@ export const zipWithResult = <T1, T2, T3>(f: (x: T1, y: T2) => Result<T3>, xs: T
          (fxy: T3) => bind(zipWithResult(f, rest(xs), rest(ys)),
                            (fxys: T3[]) => makeOk(cons(fxy, fxys))));
 
+export const zipWithResultCET = <T1, T2, T3, T4>(f: (x: T1, y: T2, z: T3) => Result<T4>, xs: T1[], ys: T2[], zs: T3): Result<T4[]> =>
+    xs.length === 0 || ys.length === 0 ? makeOk([]) :
+    bind(f(first(xs), first(ys), zs),
+        (fxy: T4) => bind(zipWithResultCET(f, rest(xs), rest(ys), zs),
+                            (fxys: T4[]) => makeOk(cons(fxy, fxys))));
+
 export const safe2 = <T1, T2, T3>(f: (x: T1, y: T2) => Result<T3>): (xr: Result<T1>, yr: Result<T2>) => Result<T3> =>
     (xr: Result<T1>, yr: Result<T2>) =>
         bind(xr, (x: T1) => bind(yr, (y: T2) => f(x, y)));

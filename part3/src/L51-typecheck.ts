@@ -95,6 +95,9 @@ export const typeofPrim = (p: PrimOp): Result<TExp> =>
     (p.op === 'string=?') ? parseTE('(T1 * T2 -> boolean)') :
     (p.op === 'display') ? parseTE('(T -> void)') :
     (p.op === 'newline') ? parseTE('(Empty -> void)') :
+    (p.op === 'cons') ? parseTE('(T1 * T2 -> cons)') :      // Implemented by us.
+    (p.op === 'car') ? parseTE('(cons -> T)') :            // Implemented by us.
+    (p.op === 'cdr') ? parseTE('(cons -> T)') :             // Implemented by us.
     makeFailure(`Primitive not yet implemented: ${p.op}`);
 
 // Purpose: compute the type of an if-exp
@@ -197,13 +200,26 @@ export const typeofLetrec = (exp: LetrecExp, tenv: TEnv): Result<TExp> => {
 // Purpose: compute the type of a define
 // Typing rule:
 //   (define (var : texp) val)
-// Not implemented
+// If   type<val1>(tenv) = t1
+//      type<val1>(tenv) = t1
+// then type<define (var : texp) val)>(tenv) = void
 export const typeofDefine = (exp: DefineExp, tenv: TEnv): Result<VoidTExp> => {
-    return makeOk(makeVoidTExp());
+    const constrain = bind(typeofExp(exp.val, tenv), (valTE) => checkEqualType(valTE, exp.var.texp, exp));
+    return bind(constrain, _ => makeOk(makeVoidTExp()));
 };
 
 // Purpose: compute the type of a program
 // Typing rule:
-// Not implemented: Thread the TEnv (as in L1)
+
+// Not implemented: Thread the TEnv (as in L1)        Delete this comment before submitting!!!$@$@!#$!#$
+
+// Add something here??? The type expression of the program will obviously be the type of the last expression in it.
 export const typeofProgram = (exp: Program, tenv: TEnv): Result<TExp> =>
-    makeFailure("Not implemented");
+    isEmpty(exp.exps) ? makeFailure("Empty program") :
+    typeofProgramExps(first(exp.exps), rest(exp.exps), tenv);
+
+const typeofProgramExps = (exp: Exp, exps: Exp[], tenv: TEnv): Result<TExp> => 
+    isEmpty(exps) ? typeofExp(exp, tenv) :
+    isDefineExp(exp) ? bind(typeofDefine(exp, makeExtendTEnv([exp.var.var], [exp.var.texp], tenv)),
+    _ => typeofProgramExps(first(exps), rest(exps), makeExtendTEnv([exp.var.var], [exp.var.texp], tenv))) :
+    bind(typeofExp(exp, tenv), _ => typeofProgramExps(first(exps), rest(exps), tenv));
